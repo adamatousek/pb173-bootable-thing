@@ -25,17 +25,42 @@ multiboot_header_end:
 
 multiboot_entry:
         movl    $(stack + STACK_SIZE), %esp /* stack pointer */
-        pushl   $0                          
+        pushl   $0
         popf                                /* reset EFLAGS */
 
         pushl   %ebx /* multiboot information structure */
         pushl   %eax /* multiboot magic value */
         call    main /* let's C */
+        jmp     pre_halt
 
-        pushl   $halt_message
-        call    puts
+#define VIDEO 0xB8000
+pre_halt:
+        mov     $2, %ecx
+loop_flags_row:
+        mov     $39, %ebx
+loop_flags_col:
+        mov     %ecx, %eax          # row in message
+        add     $12, %eax           # row in vga
+        mov     $80, %edx
+        mul     %edx                # first char of the row on screen
+        add     $20, %eax           # move the message to center
+        add     %ebx, %eax          # the char on screen
+        shl     $1, %eax            # the char in vga
+        xor     %dl, %dl
+        cmp     $1, %ecx            # middle line
+        jne     empty
+        movb    halt_message(%ebx), %dl
+empty:
+        movb    %dl, VIDEO(%eax)
+        inc     %eax                # the flag in vga
+        movb    $0xE0, VIDEO(%eax)
+        dec     %ebx
+        jns     loop_flags_col
+        dec     %ecx
+        jns     loop_flags_row
         hlt
+#undef VIDEO
 
 halt_message:
-        .asciz  "halted"
+        .asciz  "  Nyni muzete pocitac bezpecne vypnout  "
         .comm   stack, STACK_SIZE /* the stack */
