@@ -1,13 +1,29 @@
 #include <dev/vga.hpp>
 #include <dev/serial.hpp>
+#include <mem/paging.hpp>
 #include <multiboot2.h>
 
 namespace masys {
+
+const size_t PAGE_SIZE = 4096;
+
+alignas( PAGE_SIZE ) mem::PageEntry page_directory[ PAGE_SIZE ];
 
 void kernel( unsigned long magic, unsigned long addr )
 {
     dev::Vga vga;
     vga.clear();
+
+    vga.puts( "Enabling paging...\n" );
+
+    for ( auto & pgdir_entry : page_directory )
+    {
+        pgdir_entry._raw = 0;
+    }
+    auto & mypage = page_directory[ 1 << 8 ];
+    mypage.present = 1;
+
+    mem::enable_paging( page_directory );
 
     if ( magic != MULTIBOOT2_BOOTLOADER_MAGIC )
     {

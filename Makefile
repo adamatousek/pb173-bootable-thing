@@ -13,7 +13,7 @@ boot.img: a.out
 	$(MKRESCUE) -o $@ _boot
 	rm -rf _boot
 
-a.out: dev/io.o kernel.o boot.o
+a.out: mem/paging.o dev/io.o kernel.o boot.o
 	$(LD) -o $@ -T linkscript $(CFLAGS) $(LDFLAGS) $^
 
 %.o: %.cpp
@@ -26,4 +26,4 @@ test: boot.img
 	qemu-system-i386 -serial stdio -cdrom boot.img
 
 clean:
-	rm -f boot.img a.out *.o dev/*.o
+	rm -f boot.img a.out *.o dev/*.o mem/*.o
