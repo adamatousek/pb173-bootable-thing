@@ -7,7 +7,8 @@ namespace masys {
 namespace dev {
 
 class Vga : public CharacterOutput {
-    u8 * const video = ( u8 * ) 0xB8000;
+
+    u8 * const video;
     const int columns = 80;
     const int lines = 24;
 
@@ -15,6 +16,11 @@ class Vga : public CharacterOutput {
        y = 0,
        flags = 0x07;
 public:
+    static const u32 MEMORY_MAPPED = 0xB8000;
+
+    Vga( u8 * fb_addr )
+        : video( fb_addr ) {}
+
     Status putch( u8 c ) {
         if ( c == '\b' && x > 0 ) {
             --x;

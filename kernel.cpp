@@ -1,42 +1,44 @@
 #include <dev/vga.hpp>
 #include <dev/serial.hpp>
 #include <mem/paging.hpp>
+#include <util.hpp>
 #include <multiboot2.h>
+
+extern "C" {
+
+extern masys::mem::PageEntry page_directory[];
+
+}
 
 namespace masys {
 
-const size_t PAGE_SIZE = 4096;
-
-alignas( PAGE_SIZE ) mem::PageEntry page_directory[ PAGE_SIZE ];
+const size_t PAGE_SIZE = 0x1000;
+const size_t PAGEDIR_ENTRIES = 1024;
+const u32 HIGHER_HALF = 0xC0000000;
 
 void kernel( unsigned long magic, unsigned long addr )
 {
-    dev::Vga vga;
+    dev::SerialLine ser( dev::SERIAL_PORT_1 );
+
+    char buf[32];
+    ser.puts( "Page Directory address: 0x" );
+    itoa( (u32) page_directory, buf, 16 );
+    ser.puts( buf );
+    ser.putch( '\n' );
+    ser.puts( "Stack pointer: 0x" );
+    itoa( (u32) buf, buf, 16 );
+    ser.puts( buf );
+    ser.putch( '\n' );
+    ser.puts( "Multiboot info address: 0x" );
+    itoa( addr, buf, 16 );
+    ser.puts( buf );
+    ser.putch( '\n' );
+
+    dev::Vga vga( (u8*) dev::Vga::MEMORY_MAPPED + HIGHER_HALF );
     vga.clear();
+    vga.puts( "\nSwitched.\n" );
 
-    vga.puts( "Enabling paging...\n" );
-
-    for ( auto & pgdir_entry : page_directory )
-    {
-        pgdir_entry._raw = 0;
-    }
-    auto & mypage = page_directory[ 1 << 8 ];
-    mypage.present = 1;
-
-    mem::enable_paging( page_directory );
-
-    if ( magic != MULTIBOOT2_BOOTLOADER_MAGIC )
-    {
-        vga.puts( "invalid magic number :-(" );
-        return;
-    }
-
-    if ( addr & 7 )
-    {
-        vga.puts( "unaligned mbi :-(" );
-        return;
-    }
-
+    // TODO: Don't assume that multiboot info is in lower 4M
     vga.puts( "Co nam Multiboot povedel:\n================================\n" );
 
     auto tag = reinterpret_cast< multiboot_tag * >( addr + 8 );
@@ -58,11 +60,12 @@ void kernel( unsigned long magic, unsigned long addr )
                   + tag->size + 7 ) & 0xfffffff8UL );
     }
 
-    vga.puts( "Nyni ocekavam vstup na seriove lince (coz je stdin, ehm).\n" );
+    /* Cancel id-mapping */
+    page_directory[ 0 ].present = 0;
+
+    vga.puts( "Nyni ocekavam vstup na seriove lince.\n" );
     vga.puts( "^D ukonci cinnost tohoto bohorovneho jadra.\n\n" );
 
-
-    dev::SerialLine ser( dev::SERIAL_PORT_1 );
     ser.puts( "Ahoj svete za seriovou linkou! Povez mi neco:\n" );
 
     const char CTRL_D = 4;
@@ -74,6 +77,7 @@ void kernel( unsigned long magic, unsigned long addr )
         ser.putch( a );
     } while ( a != CTRL_D );
 
+    ser.puts( "\nKernel konec.\n" );
     vga.puts( "\nKernel konec.\n" );
 }
 

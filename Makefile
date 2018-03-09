@@ -13,7 +13,7 @@ boot.img: a.out
 	$(MKRESCUE) -o $@ _boot
 	rm -rf _boot
 
-a.out: mem/paging.o dev/io.o kernel.o boot.o
+a.out: mem/paging.o dev/io.o kernel.o boot.o util.o
 	$(LD) -o $@ -T linkscript $(CFLAGS) $(LDFLAGS) $^
 
 %.o: %.cpp
