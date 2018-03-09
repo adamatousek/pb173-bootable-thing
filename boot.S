@@ -36,7 +36,7 @@ multiboot_header:
         .long 8                         /* tag size */
 multiboot_header_end:
 
-        .text
+        .section .text
 
         .globl  start, _start
         .type _start, @function
@@ -65,15 +65,13 @@ multiboot_entry:
 higher:
         /* map the stack base to 4G minus 4M */
         movl    $((STACK_SIZE >> 12) - 1), %ecx
+        movl    $(stack_pgtbl + 0x1000 - (STACK_SIZE >> 10) ), %ebx
 loop1:
-        movl    %ecx, %ebx
-        shl     $12, %ebx
-        add     $(stack - HIGHER_HALF), %ebx
-        or      $0x3, %ebx
-        mov     %ecx, %eax
-        shl     $2, %eax
-        add     $(stack_pgtbl + 0x1000 - (STACK_SIZE >> 10) ), %eax
-        movl    %ebx, (%eax)
+        movl    %ecx, %eax
+        shl     $12, %eax
+        add     $(stack - HIGHER_HALF), %eax
+        or      $0x3, %eax
+        movl    %eax, (%ebx, %ecx, 4)
         dec     %ecx
         jns     loop1
 
@@ -127,11 +125,7 @@ page_directory:
 
         .align 0x1000
 stack_pgtbl:
-        .fill 1020, 4, 0x0                    # Nothing
-        .long (stack - HIGHER_HALF + 0x3)     # Four static stack pages
-        .long (stack - HIGHER_HALF + 0x1003)
-        .long (stack - HIGHER_HALF + 0x2003)
-        .long (stack - HIGHER_HALF + 0x3003)
+        .fill 1024, 4, 0x0                    # Nothing
 
 halt_message:
         .asciz  "  Nyni muzete pocitac bezpecne vypnout  "

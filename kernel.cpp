@@ -61,7 +61,7 @@ void kernel( unsigned long magic, unsigned long addr )
     }
 
     /* Cancel id-mapping */
-    page_directory[ 0 ].present = 0;
+    //page_directory[ 0 ].present = 0;
 
     vga.puts( "Nyni ocekavam vstup na seriove lince.\n" );
     vga.puts( "^D ukonci cinnost tohoto bohorovneho jadra.\n\n" );
