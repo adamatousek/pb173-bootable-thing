@@ -4,6 +4,11 @@
 #include<types.hpp>
 
 namespace masys {
+
+const size_t PAGE_SIZE = 0x1000;
+const size_t PAGEDIR_ENTRIES = 1024;
+const u32 HIGHER_HALF = 0xC0000000;
+
 namespace mem {
 
 struct PageEntry {

@@ -12,6 +12,9 @@ namespace masys {
     using u32 = unsigned long;
     using i32 = signed long;
 
+    using u64 = unsigned long long;
+    using i64 = signed long long;
+
     using size_t = u32;
 
 } /* masys */

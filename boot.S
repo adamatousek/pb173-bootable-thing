@@ -1,6 +1,6 @@
 #define ASM_FILE        1
 // Stack size shall be at most 4M
-#define STACK_SIZE      0x4000
+#define STACK_SIZE      (36 * 0x1000)
 #define HIGHER_HALF     0xC0000000
 #define VIRT_STACK      0xFFC00000
 #include "multiboot2.h"
@@ -38,7 +38,7 @@ multiboot_header_end:
 
         .section .text
 
-        .globl  start, _start
+        .globl  start, _start, panic
         .type _start, @function
 
 #define VIDEO 0xC00B8000
@@ -83,7 +83,7 @@ loop1:
         pushl   %esi /* multiboot magic value */
         call    main
 
-
+panic:
 pre_halt:
         mov     $2, %ecx
 loop_flags_row:
@@ -116,16 +116,16 @@ empty:
         .global page_directory
         .align 0x1000
 page_directory:
-        .long 0x00000083                        # Id-map low 4M
-        .fill (HH_PGDIR_IDX - 1), 4, 0x0        # Nothing
-        .long 0x00000083                        # Map low 4M to HIGHER_HALF
-        .fill (1021 - HH_PGDIR_IDX), 4, 0x0     # Nothing
-        .long (stack_pgtbl - HIGHER_HALF + 0x3) # Page table for the stack
-        .long 0x00000000
+        .long 0x00000083                            # Id-map low 4M
+        .fill (HH_PGDIR_IDX - 1), 4, 0x0            # Nothing
+        .long 0x00000083                            # Map low 4M to HIGHER_HALF
+        .fill (1021 - HH_PGDIR_IDX), 4, 0x0         # Nothing
+        .long (stack_pgtbl - HIGHER_HALF + 0x3)     # Page table for the stack
+        .long (page_directory - HIGHER_HALF + 0x3)  # Page directory itself
 
         .align 0x1000
 stack_pgtbl:
-        .fill 1024, 4, 0x0                    # Nothing
+        .fill 1024, 4, 0x0                          # Nothing yet
 
 halt_message:
         .asciz  "  Nyni muzete pocitac bezpecne vypnout  "

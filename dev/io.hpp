@@ -10,8 +10,8 @@ unsigned __masys_inb( unsigned long port );
 
 namespace masys {
 namespace dev {
-    void outb( u32 port, u8 data ) { __masys_outb( port, data ); }
-    u8 inb( u32 port ) { return __masys_inb( port ); }
+    inline void outb( u32 port, u8 data ) { __masys_outb( port, data ); }
+    inline u8 inb( u32 port ) { return __masys_inb( port ); }
 } /* dev */
 } /* masys */
 
