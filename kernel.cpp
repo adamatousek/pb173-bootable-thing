@@ -68,12 +68,6 @@ void kernel( unsigned long magic, unsigned long addr )
     }
 
 
-    for ( int i = 0; i < 5; ++i ) {
-        auto phys = fal.alloc();
-        fal.free( phys );
-    }
-
-
     /* Cancel id-mapping */
     //page_directory[ 0 ].present = 0;
 

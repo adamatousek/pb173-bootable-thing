@@ -2,12 +2,13 @@
 #include <mem/alloca.hpp>
 #include <panic.hpp>
 #include <debug.hpp>
+#include <types.hpp>
 
 extern "C" {
 
-extern void _kernel_start( void );
-extern void _kernel_end( void );
-extern void _bss_end( void );
+extern char _kernel_start;
+extern char _kernel_end;
+extern char _bss_end;
 
 }
 
@@ -16,24 +17,55 @@ namespace mem {
 
 void FrameAllocator::init( const multiboot_tag_mmap *mmap )
 {
+    auto kernel_start = reinterpret_cast< u32 >( &_kernel_start ) - HIGHER_HALF;
+    auto bss_end = reinterpret_cast< u32 >( &_bss_end ) - HIGHER_HALF;
     /* Enqueue memory areas to be managed */
     // Yes, it is suboptimal if the available memory has holes in it, because
     // the bitmaps can currently only cover continuous area.
+
     for ( int i = 0, j = 0;
           i < (mmap->size - 8) / mmap->entry_size && j < 8;
           i++ )
     {
         auto & m = mmap->entries[ i ];
+        auto & ma = queued[ j ];
         switch ( m.type ) {
             case MULTIBOOT_MEMORY_AVAILABLE:
                 if ( m.addr > 0xFFFFFFFFul )
                     break;
-                queued[ j ].base_addr = m.addr;
+                ma.base_addr = m.addr;
                 if ( m.addr + m.len > 0xFFFFFFFFul )
-                    queued[ j ].size = 0xFFFFFFFFul - m.addr;
+                    ma.size = 0xFFFFFFFFul - m.addr;
                 else
-                    queued[ j ].size = m.len;
-                ++j;
+                    ma.size = m.len;
+
+                // Subtract memory occupied by kernel
+                if ( kernel_start >= ma.base_addr &&
+                     kernel_start < ma.base_addr + ma.size )
+                {
+                    auto newsz = kernel_start - ma.base_addr;
+                    if ( newsz > 0 ) {
+                        auto oldsz = ma.size;
+                        ma.size = newsz;
+                        ++j;
+                        ma = queued[ j ];
+                        if ( j < 8 ) {
+                            ma.base_addr = m.addr;
+                            ma.size = oldsz;
+                        } else
+                            break;
+                    }
+                }
+                if ( bss_end >= ma.base_addr &&
+                     bss_end < ma.base_addr + ma.size )
+                {
+                    ma.size -= bss_end - ma.base_addr;
+                    ma.base_addr = bss_end;
+                }
+
+                if ( ma.size > 0 )
+                    ++j;
+
                 break;
             case MULTIBOOT_MEMORY_RESERVED:
             case MULTIBOOT_MEMORY_ACPI_RECLAIMABLE:
@@ -64,12 +96,6 @@ void FrameAllocator::init( const multiboot_tag_mmap *mmap )
     queued[ i ].size -= 32 * PAGE_SIZE;
     sub_st.n_free = 32;
     sub_st.base_addr = queued[ i ].base_addr;
-
-    dbg::sout() << "\nQueued memory areas:\n";
-    for ( const auto & ma : queued ) {
-        dbg::sout() << "- addr: " << dbg::hex() << ma.base_addr
-                    << ", size: " << dbg::dec() << ma.size << '\n';
-    }
 }
 
 u32 FrameAllocator::alloc()
