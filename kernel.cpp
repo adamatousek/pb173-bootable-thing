@@ -5,6 +5,7 @@
 #include <util.hpp>
 #include <debug.hpp>
 #include <multiboot2.h>
+#include <panic.hpp>
 
 namespace masys {
 namespace dbg {
@@ -108,11 +109,13 @@ void kernel( unsigned long magic, unsigned long addr )
         vga.putch( a );
         ser.putch( a );
     } while ( a != CTRL_D );
-#else
-    vga.puts( "Stisknete klavesu Any k usmrceni jadra.\n" );
-    ser.puts( "Stisknete klavesu Any k usmrceni jadra.\n" );
+#elif 1
+    vga.puts( "Stisknete klavesu Any k usmrceni jadra, 'p' vyvola paniku.\n" );
+    ser.puts( "Stisknete klavesu Any k usmrceni jadra, 'p' vyvola paniku.\n" );
     unsigned char a;
     ser.getch( a );
+    if ( a == 'p' )
+        panic();
 #endif
 
     ser.puts( "\nKernel konec.\n" );

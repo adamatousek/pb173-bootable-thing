@@ -38,7 +38,7 @@ multiboot_header_end:
 
         .section .text
 
-        .globl  start, _start, panic, __masys_hlt
+        .globl  start, _start, panic, __masys_halt, __masys_hlt
         .type _start, @function
 
 #define VIDEO 0xC00B8000
@@ -83,27 +83,38 @@ loop1:
         pushl   %esi /* multiboot magic value */
         call    main
 
+__masys_halt:
+        lea     halt_message-1, %esi
+        movb    $0xE0, %dl
+        jmp     pre_halt
 panic:
+        mov     $(80 * 25 + 1), %ecx
+loop_bsod:
+        movb    $0x17, (VIDEO - 1)(, %ecx, 2)
+        loop    loop_bsod
+        lea     panic_message-1, %esi
+        movb    $0xC0, %dl
 pre_halt:
-        mov     $2, %ecx
+        std
+        mov     $2, %ecx            # 3 rows
 loop_flags_row:
-        mov     $39, %ebx
-loop_flags_col:
         mov     %ecx, %eax          # row in message
-        add     $12, %eax           # row in vga
-        mov     $80, %edx
-        mul     %edx                # first char of the row on screen
-        add     $20, %eax           # move the message to center
-        add     %ebx, %eax          # the char on screen
-        shl     $1, %eax            # the char in vga
-        xor     %dl, %dl
+        add     $11, %eax           # row in vga
+        shl     $4, %eax            # -.
+        lea     (%eax,%eax,4), %eax # --`- multiply by 80 (start of row)
+        add     $59, %eax           # move the message to center
+        mov     $39, %ebx           # 40 columns
+        lea     VIDEO(,%eax,2), %edi
+loop_flags_col:
         cmp     $1, %ecx            # middle line
         jne     empty
-        movb    halt_message(%ebx), %dl
+        lodsb
+        jmp     flags
 empty:
-        movb    %dl, VIDEO(%eax)
-        inc     %eax                # the flag in vga
-        movb    $0xE0, VIDEO(%eax)
+        movb    $'-', %al
+flags:
+        movb    %dl, %ah            # vga flags
+        stosw
         dec     %ebx
         jns     loop_flags_col
         dec     %ecx
@@ -111,6 +122,12 @@ empty:
 __masys_hlt:
         hlt
 #undef VIDEO
+
+        .section .rodata
+        .ascii  "  Nyni muzete pocitac bezpecne vypnout  "
+halt_message:
+        .ascii  "   Je nam lito, ale jadro zpanikarilo.  "
+panic_message:
 
 #define HH_PGDIR_IDX (HIGHER_HALF >> 22)
         .section .paging
@@ -132,6 +149,4 @@ kernel_pgtbl:
 stack_pgtbl:
         .fill 1024, 4, 0x0                          # Nothing yet
 
-halt_message:
-        .asciz  "  Nyni muzete pocitac bezpecne vypnout  "
         .comm   stack, STACK_SIZE /* the stack */
