@@ -27,16 +27,19 @@ void kernel( unsigned long magic, unsigned long addr )
 
     vga.puts( "\nSwitched.\n" );
 
+    // Replace 4 MiB mapping with page table
+    mem::remap_kernel_text();
+
     // Put frame allocator low on stack
     mem::FrameAllocator fal;
 
     sout() << "\nStrankovaci adresar: " << &mem::page_directory
            << "\n`-- fysicky: "
-           << mem::PageDirectory::virt2phys( (u32) &mem::page_directory )
+           << mem::PageAllocator::virt2phys( (u32) &mem::page_directory )
            << "\n`-- fysicky: "
-           << mem::PageDirectory::virt2phys( 0xFFFFF000 )
+           << mem::PageAllocator::virt2phys( 0xFFFFF000 )
            << "\nPriblizny vrchol zasobniku: " << &ser
-           << "\n`-- fysicky: " << mem::PageDirectory::virt2phys( (u32) &ser )
+           << "\n`-- fysicky: " << mem::PageAllocator::virt2phys( (u32) &ser )
            << "\nInformace od Multibootu: " << ( void* ) addr;
 
     // TODO: Don't assume that multiboot info is in lower 4M
@@ -67,9 +70,29 @@ void kernel( unsigned long magic, unsigned long addr )
                   + tag->size + 7 ) & 0xfffffff8UL );
     }
 
-
     /* Cancel id-mapping */
-    //page_directory[ 0 ].present = 0;
+    mem::unmap_id_low();
+
+    mem::PageAllocator pal( &fal );
+    pal.map( fal.alloc(), 0xD000'0000 );
+
+    auto p1 = pal.alloc( 2 ),
+         p2 = pal.alloc( 4 );
+
+    *reinterpret_cast< char * >( p1 ) = 'X';
+    *reinterpret_cast< char * >( p2 ) = 'Y';
+
+    pal.free( p1, 2 );
+    p1 = pal.alloc( 3 );
+    auto p3 = pal.alloc( 1 );
+    *reinterpret_cast< char * >( p3 ) = 'Z';
+    *reinterpret_cast< char * >( p1 ) = 'W';
+
+    /*
+    pal.free( p1, 3 );
+    pal.free( p2, 4 );
+    pal.free( p3, 1 );
+    */
 
 #if 0
     vga.puts( "Nyni ocekavam vstup na seriove lince.\n" );
@@ -86,8 +109,8 @@ void kernel( unsigned long magic, unsigned long addr )
         ser.putch( a );
     } while ( a != CTRL_D );
 #else
-    ser.puts( "Ahoj svete za seriovou linkou!\n" );
     vga.puts( "Stisknete klavesu Any k usmrceni jadra.\n" );
+    ser.puts( "Stisknete klavesu Any k usmrceni jadra.\n" );
     unsigned char a;
     ser.getch( a );
 #endif

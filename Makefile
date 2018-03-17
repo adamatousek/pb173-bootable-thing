@@ -2,7 +2,7 @@ CC = g++
 LD = g++
 CFLAGS = -std=c++14 -ffreestanding -nostdlib -static -fno-stack-protector -m32 -fno-PIC -I. -fno-rtti -fno-exceptions
 LDFLAGS = -Wl,-melf_i386
-GRUB = $(HOME)/Dev/masys/grub/bin
+GRUB ?= $(HOME)/Dev/masys/grub/bin
 MKRESCUE = env PATH=$$PATH:$(GRUB) grub-mkrescue
 
 boot.img: a.out
@@ -13,14 +13,14 @@ boot.img: a.out
 	$(MKRESCUE) -o $@ _boot
 	rm -rf _boot
 
-a.out: boot.o kernel.o debug.o mem/alloca.o mem/frames.o mem/paging.o dev/io.o util.o
+a.out: boot.o kernel.o debug.o mem/alloca.o mem/frames.o mem/paging.o mem/vmmap.o dev/io.o util.o
 	$(LD) -o $@ -T linkscript $(CFLAGS) $(LDFLAGS) $^
 
 %.o: %.cpp
-	$(CC) -o $@ -c $(CFLAGS) -no-pie $<
+	$(CC) -o $@ -c $(CFLAGS) $<
 
 %.o: %.S
-	$(CC) -o $@ -c $(CFLAGS) -no-pie $<
+	$(CC) -o $@ -c $(CFLAGS) $<
 
 test: boot.img
 	qemu-system-i386 -serial stdio -cdrom boot.img

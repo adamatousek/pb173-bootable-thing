@@ -10,6 +10,8 @@ extern char _kernel_start;
 extern char _kernel_end;
 extern char _bss_end;
 
+extern masys::mem::PageTable kernel_pgtbl;
+
 }
 
 namespace masys {
@@ -19,6 +21,9 @@ void FrameAllocator::init( const multiboot_tag_mmap *mmap )
 {
     auto kernel_start = reinterpret_cast< u32 >( &_kernel_start ) - HIGHER_HALF;
     auto bss_end = reinterpret_cast< u32 >( &_bss_end ) - HIGHER_HALF;
+    kernel_start -= kernel_start % PAGE_SIZE;
+    bss_end += PAGE_SIZE - 1;
+    bss_end -= bss_end % PAGE_SIZE;
     /* Enqueue memory areas to be managed */
     // Yes, it is suboptimal if the available memory has holes in it, because
     // the bitmaps can currently only cover continuous area.
@@ -27,12 +32,20 @@ void FrameAllocator::init( const multiboot_tag_mmap *mmap )
           i < (mmap->size - 8) / mmap->entry_size && j < 8;
           i++ )
     {
-        auto & m = mmap->entries[ i ];
+        auto m = mmap->entries[ i ];
         auto & ma = queued[ j ];
         switch ( m.type ) {
             case MULTIBOOT_MEMORY_AVAILABLE:
                 if ( m.addr > 0xFFFFFFFFul )
                     break;
+                if ( m.addr % PAGE_SIZE ) {
+                    auto under = PAGE_SIZE - m.addr % PAGE_SIZE;
+                    m.addr += under;
+                    m.len -= under;
+                }
+
+                m.len -= m.len % PAGE_SIZE;
+
                 ma.base_addr = m.addr;
                 if ( m.addr + m.len > 0xFFFFFFFFul )
                     ma.size = 0xFFFFFFFFul - m.addr;
@@ -78,6 +91,7 @@ void FrameAllocator::init( const multiboot_tag_mmap *mmap )
 
     /* Find continuous 32 pages for the static suballocator */
     // Although I need full 32 pages, they might not be all used for bitmaps.
+    // The continuity request is only for convenience.
     int i = 0;
     while ( i < 8 && queued[ i ].size < 32 * PAGE_SIZE )
         ++i;
@@ -95,7 +109,7 @@ void FrameAllocator::init( const multiboot_tag_mmap *mmap )
 
     queued[ i ].size -= 32 * PAGE_SIZE;
     sub_st.n_free = 32;
-    sub_st.base_addr = queued[ i ].base_addr;
+    sub_st.base_addr = queued[ i ].base_addr + queued[ i ].size;
 }
 
 u32 FrameAllocator::alloc()
@@ -115,6 +129,7 @@ u32 FrameAllocator::alloc()
         return sub->alloc();
 
     // TODO: hand out the pages from static suballocator last
+    dbg::sout() << "No more free frames!\n";
     panic();
 }
 
@@ -132,13 +147,13 @@ FrameSubAllocator * FrameAllocator::init_new_suballocator()
     if ( ! ma )
         return nullptr;
 
-    dbg::sout() << "- using memory area {" << dbg::hex() << ma->base_addr
-        << dbg::dec() <<", "<< ma->size << "}\n";
+    dbg::sout() << "- using memory area {addr: 0x" << dbg::hex()
+        << ma->base_addr <<", sz: 0x"<< ma->size << "}\n";
 
     const u32 maxsz = PAGE_SIZE * PAGE_SIZE * 8;
     u32 sz = ( ma->size < maxsz ) ? ( ma->size & ~0xFFF ) : maxsz;
 
-    dbg::sout() << "- will init " << sz << " bytes\n";
+    dbg::sout() << "- popping 0x" << dbg::hex() << sz << " bytes\n";
 
     FrameSubAllocator *newsub = nullptr;
     for ( int i = 0; i < 32; ++i ) {
@@ -155,10 +170,13 @@ FrameSubAllocator * FrameAllocator::init_new_suballocator()
     newsub->n_free = sz / PAGE_SIZE;
     newsub->base_addr = ma->base_addr + ma->size;
 
-    // TODO: proper virtual mapping, this is sooooo temporary and unsafe
-    // However, I must be sure that there, in fact, *is* a page table to map
-    // into, because the VM mapper must not allocate a new frame for it.
-    newsub->bitmap = reinterpret_cast< u8* >( sub_st.alloc() + HIGHER_HALF );
+    auto bmphys = sub_st.alloc();
+    auto bmvirt = ( 31 - sub_st.n_free ) * PAGE_SIZE +
+                  reserved::FRAME_ALLOC_BITMAP_START;
+    dbg::sout() << " - new bitmap phys: 0x" << dbg::hex() << bmphys
+                << ", virt: 0x" << bmvirt << '\n';
+    kernel_pgtbl[ ( bmvirt >> 12 ) & 0x3FF ]._raw = bmphys | 0x103;
+    newsub->bitmap = reinterpret_cast< u8* >( bmvirt );
     newsub->clean( sz / PAGE_SIZE );
 
     return newsub;
@@ -186,7 +204,7 @@ void FrameAllocator::free( u32 phys )
     sub->bitmap[ bytei ] &= ~( 0x80 >> biti );
     sub->n_free++;
 
-    dbg::sout() << "freeing frame, phys. 0x" << dbg::hex() << phys << '\n';
+    dbg::sout() << " - freeing frame, phys. 0x" << dbg::hex() << phys << '\n';
 }
 
 void FrameSubAllocator::clean( u16 npgs )

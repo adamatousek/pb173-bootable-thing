@@ -1,6 +1,6 @@
 #define ASM_FILE        1
 // Stack size shall be at most 4M
-#define STACK_SIZE      (36 * 0x1000)
+#define STACK_SIZE      (5 * 0x1000)
 #define HIGHER_HALF     0xC0000000
 #define VIRT_STACK      0xFFC00000
 #include "multiboot2.h"
@@ -38,7 +38,7 @@ multiboot_header_end:
 
         .section .text
 
-        .globl  start, _start, panic
+        .globl  start, _start, panic, __masys_hlt
         .type _start, @function
 
 #define VIDEO 0xC00B8000
@@ -70,7 +70,7 @@ loop1:
         movl    %ecx, %eax
         shl     $12, %eax
         add     $(stack - HIGHER_HALF), %eax
-        or      $0x3, %eax
+        or      $0x103, %eax            # Global, RW, Present
         movl    %eax, (%ebx, %ecx, 4)
         dec     %ecx
         jns     loop1
@@ -108,20 +108,25 @@ empty:
         jns     loop_flags_col
         dec     %ecx
         jns     loop_flags_row
+__masys_hlt:
         hlt
 #undef VIDEO
 
 #define HH_PGDIR_IDX (HIGHER_HALF >> 22)
         .section .paging
-        .global page_directory
+        .global page_directory, kernel_pgtbl
         .align 0x1000
 page_directory:
-        .long 0x00000083                            # Id-map low 4M
-        .fill (HH_PGDIR_IDX - 1), 4, 0x0            # Nothing
-        .long 0x00000083                            # Map low 4M to HIGHER_HALF
-        .fill (1021 - HH_PGDIR_IDX), 4, 0x0         # Nothing
-        .long (stack_pgtbl - HIGHER_HALF + 0x3)     # Page table for the stack
-        .long (page_directory - HIGHER_HALF + 0x3)  # Page directory itself
+        .long 0x00000083                              # Id-map low 4M
+        .fill (HH_PGDIR_IDX - 1), 4, 0x0              # Nothing
+        .long 0x00000083                              # Map low 4M to HIGHER_HALF
+        .fill (1021 - HH_PGDIR_IDX), 4, 0x0           # Nothing
+        .long (stack_pgtbl - HIGHER_HALF + 0x103)     # Page table for the stack
+        .long (page_directory - HIGHER_HALF + 0x103)  # Page directory itself
+
+        .align 0x1000
+kernel_pgtbl:
+        .fill 1024, 4, 0x0                          # Nothing yet
 
         .align 0x1000
 stack_pgtbl:

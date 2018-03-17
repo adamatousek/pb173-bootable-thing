@@ -3,6 +3,10 @@
 #include <dev/serial.hpp>
 #include <util.hpp>
 
+extern "C" {
+void __masys_hlt();
+}
+
 namespace masys {
 namespace dbg {
 
@@ -25,6 +29,11 @@ OutStream & OutStream::operator<<( unsigned n ) {
 
 OutStream vout() { return OutStream( vga ); }
 OutStream sout() { return OutStream( ser ); }
+
+void hlt()
+{
+    __masys_hlt();
+}
 
 } /* dbg */
 } /* masys */

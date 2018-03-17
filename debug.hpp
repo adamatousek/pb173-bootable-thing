@@ -52,6 +52,8 @@ public:
 OutStream vout();
 OutStream sout();
 
+void hlt();
+
 } /* dbg */
 } /* masys */
 
