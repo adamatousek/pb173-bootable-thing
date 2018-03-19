@@ -77,6 +77,8 @@ void kernel( unsigned long magic, unsigned long addr )
     mem::PageAllocator pal( &fal );
     pal.map( fal.alloc(), 0xD000'0000 );
 
+    pal.alloc( 4,  /* user = */ true );
+
     auto p1 = pal.alloc( 2 ),
          p2 = pal.alloc( 4 );
 

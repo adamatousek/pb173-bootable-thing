@@ -34,18 +34,27 @@ namespace {
     }
 }
 
-u32 PageAllocator::alloc( u16 pages )
+u32 PageAllocator::alloc( u16 pages, bool user )
 {
-    dbg::sout() << "Allocating " << pages << " pages...\n";
-    u32 begin = find_available( pages );
-    for ( int i = 0; i < pages; ++i ) {
-        map( fal->alloc(), begin + i * PAGE_SIZE );
+    dbg::sout() << "Allocating " << pages << ( user ? " user" : " kernel" )
+                << " pages...\n";
+    u32 begin = find_available( pages,
+            user ? reserved::USER_HEAP_BEGIN : reserved::HEAP_BEGIN,
+            user ? reserved::USER_HEAP_END : reserved::HEAP_END );
+    if ( begin ) {
+        for ( int i = 0; i < pages; ++i ) {
+            map( fal->alloc(), begin + i * PAGE_SIZE,
+                 user ? PageEntry::DEFAULT_FLAGS_USER
+                      : PageEntry::DEFAULT_FLAGS_KERNEL );
+        }
     }
     return begin;
 }
 
-void PageAllocator::free ( u32 virt, u16 pages )
+void PageAllocator::free( u32 virt, u16 pages )
 {
+    if ( virt == 0 )
+        return;
     dbg::sout() << "Freeing " << pages << " pages from 0x" << dbg::hex()
                 << virt << "...\n";
     while ( pages > 0 ) {
@@ -63,13 +72,13 @@ void PageAllocator::map( u32 phys, u32 virt, u32 flags )
     auto pgdir_i = virt >> 22;
     if ( ! pgdir[ pgdir_i ].present ) {
         auto newphys = fal->alloc();
-        pgdir[ pgdir_i ]._raw = newphys | 0x103;
+        pgdir[ pgdir_i ]._raw = newphys | flags;
         for ( int i = 0; i < PAGEDIR_ENTRIES; ++i )
             pgtbl( virt )[ i ]._raw = 0;
         dbg::sout() << dbg::hex() << " - created new page table at Px"
                     << newphys << '\n';
     }
-    pgtbl_e( virt )._raw = phys | 0x103;
+    pgtbl_e( virt )._raw = phys | flags;
 
     dbg::sout() << dbg::hex() << " - mapped Vx" << virt
                 << " -> Px" << phys << '\n';
@@ -83,12 +92,12 @@ void PageAllocator::unmap( u32 virt )
                 << ( pgtbl_e( virt ).address_base << 12 ) << ")\n";
 }
 
-u32 PageAllocator::find_available( u16 pages )
+u32 PageAllocator::find_available( u16 pages, u32 from, u32 to )
 {
-    u32 pg = reserved::HEAP_BEGIN;
-    u32 begin = HIGHER_HALF;
+    u32 pg = from;
+    u32 begin = 0;
     int free = 0;
-    while ( free < pages ) {
+    while ( free < pages && begin < to ) {
         if ( free == 0 )
             begin = pg;
         if ( ! pgdir_e( pg ).present )
@@ -105,6 +114,12 @@ u32 PageAllocator::find_available( u16 pages )
                 ++free;
             pg += PAGE_SIZE;
         }
+    }
+
+    if ( begin >= to )
+    {
+        dbg::sout() << "E: Couldn't find " << pages << " continuous pages!\n";
+        return 0;
     }
 
     dbg::sout() << " - found " << pages << " continuous pages from 0x"

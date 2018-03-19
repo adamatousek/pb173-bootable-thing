@@ -13,11 +13,11 @@ class PageAllocator {
 public:
     PageAllocator( FrameAllocator *fa )
         : fal( fa ) {}
-    u32 alloc( u16 pages );
+    u32 alloc( u16 pages, bool user = false );
     void free ( u32 virt, u16 pages );
-    void map( u32 phys, u32 virt, u32 flags = 0x103 );
+    void map( u32 phys, u32 virt, u32 flags = PageEntry::DEFAULT_FLAGS_KERNEL );
     void unmap( u32 virt );
-    static u32 find_available( u16 pages );
+    static u32 find_available( u16 pages, u32 from, u32 to );
     static bool is_mapped( u32 virt );
     static u32 virt2phys( u32 virt );
 };

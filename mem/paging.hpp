@@ -22,12 +22,17 @@ const u32 HIGHER_HALF = 0xC0000000;
 namespace mem {
 
 namespace reserved {
+const u32 USER_HEAP_BEGIN = 0x1000;
+const u32 USER_HEAP_END = HIGHER_HALF;
 const u32 FRAME_ALLOC_BITMAP_START = HIGHER_HALF + 0x1000;
 const u32 HEAP_BEGIN = HIGHER_HALF + 0x400000;
+const u32 STACK_BOTTOM = 0xFFC00000;
+const u32 HEAP_END = STACK_BOTTOM - 0x400000;
+const u32 PAGE_DIRECTORY = STACK_BOTTOM;
 } /* reserved */
 
 struct PageEntry {
-    union {
+    union alignas( 4 ) {
         struct {
             u32 present : 1;
             u32 rw : 1;
@@ -44,8 +49,16 @@ struct PageEntry {
         u32 _raw;
     };
 
+    static const u32 DEFAULT_FLAGS_KERNEL = 0x103; // Global, RW, Present
+    static const u32 DEFAULT_FLAGS_USER = 0x07; // User, RW, Present
+
     PageEntry() : _raw( 0 ) {};
 };
+
+static_assert( sizeof( PageEntry ) == 4,
+               "PageEntry has wrong size" );
+static_assert( alignof( PageEntry ) == 4,
+               "PageEntry has wrong alignment" );
 
 using PageTable alignas( PAGE_SIZE ) = PageEntry [ PAGEDIR_ENTRIES ];
 
