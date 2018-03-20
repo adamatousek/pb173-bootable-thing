@@ -51,6 +51,8 @@ public:
     void * alloc( u32 size );
     void * realloc( void *ptr, u32 size );
     void free( void *ptr );
+
+    void dump_freelist();
 };
 
 extern SubpageAllocator *allocator;

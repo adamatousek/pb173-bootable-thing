@@ -107,21 +107,29 @@ void kernel( unsigned long magic, unsigned long addr )
 
     auto m1 = kmalloc( 8 );
     sout() << "kmalloc'd 8 at: " << m1 << '\n';
+    spal.dump_freelist();
     auto m2 = kmalloc( 127 );
     sout() << "kmalloc'd 127 at: " << m2 << '\n';
+    spal.dump_freelist();
     auto m3 = kmalloc( 16 );
     sout() << "kmalloc'd 16 at: " << m3 << '\n';
+    spal.dump_freelist();
     kfree( m1 );
     m1 = kmalloc( 4 );
     sout() << "kmalloc'd 4 at: " << m1 << '\n';
+    spal.dump_freelist();
     auto m1r = krealloc( m1, 8 );
     sout() << "kremalloc'd 4 -> 8 at: " << m1r << '\n';
+    spal.dump_freelist();
     kfree( m1r );
     sout() << "freed m1r\n";
-    kfree( m2 );
-    sout() << "freed m2\n";
+    spal.dump_freelist();
     kfree( m3 );
     sout() << "freed m3\n";
+    spal.dump_freelist();
+    kfree( m2 );
+    sout() << "freed m2\n";
+    spal.dump_freelist();
 
 #if 0
     vga.puts( "Nyni ocekavam vstup na seriove lince.\n" );

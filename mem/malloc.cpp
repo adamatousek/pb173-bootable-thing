@@ -58,10 +58,12 @@ void * SubpageAllocator::alloc( u32 size )
         newfree = chunk->next();
     }
 
-    if ( prev )
-        prev->next() = newfree;
+    if ( chunk->prev() )
+        chunk->prev()->next() = chunk->next();
     else
-        freelist = newfree;
+        freelist = chunk->next();
+    if ( chunk->next() )
+        chunk->next()->prev() = chunk->prev();
 
     chunk->free( false );
     return chunk->data();
@@ -124,6 +126,7 @@ void SubpageAllocator::free( void *ptr )
           *foll = chunk->following();
 
     if ( ! chunk->pre_footer.free() && ! foll->free() ) {
+        freelist->prev() = chunk;
         chunk->next() = freelist;
         chunk->prev() = nullptr;
         freelist = chunk;
@@ -148,6 +151,22 @@ void SubpageAllocator::free( void *ptr )
             freelist = foll->next();
         chunk->size( chunk->size() + foll->size() + 8 );
     }
+}
+
+void SubpageAllocator::dump_freelist()
+{
+    dbg::sout() << "malloc's freelist:\n";
+    auto chunk = freelist;
+    if ( chunk->prev() )
+        dbg::sout() << " +-- (broken prev, is " << chunk->prev() << ")\n";
+    while ( chunk ) {
+        dbg::sout() << " | chunk at " << chunk
+                    << ", size: " << dbg::dec() << chunk->size() << '\n';
+        if ( chunk->next() && chunk->next()->prev() != chunk )
+            dbg::sout() << " +-- (broken prev, is " << chunk->next()->prev() << ")\n";
+        chunk = chunk->next();
+    }
+    dbg::sout() << " `---\n";
 }
 
 } /* mem */
