@@ -1,4 +1,5 @@
 #include <mem/vmmap.hpp>
+#include <mem/frames.hpp>
 #include <types.hpp>
 #include <debug.hpp>
 #include <dev/vga.hpp>

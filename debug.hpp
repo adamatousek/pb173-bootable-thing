@@ -57,4 +57,6 @@ void hlt();
 } /* dbg */
 } /* masys */
 
+#define DBGEXPR( v ) dbg::sout() << "DBG: " << #v << " = " << v << '\n'
+
 #endif /* end of include guard: _MASYS_DEBUG_HPP_ */

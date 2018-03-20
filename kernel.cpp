@@ -2,6 +2,7 @@
 #include <dev/serial.hpp>
 #include <mem/vmmap.hpp>
 #include <mem/frames.hpp>
+#include <mem/malloc.hpp>
 #include <util.hpp>
 #include <debug.hpp>
 #include <multiboot2.h>
@@ -12,6 +13,9 @@ namespace dbg {
 dev::Vga *vga;
 dev::SerialLine *ser;
 } /* dbg */
+namespace mem {
+SubpageAllocator *allocator;
+}
 
 void kernel( unsigned long magic, unsigned long addr )
 {
@@ -63,6 +67,7 @@ void kernel( unsigned long magic, unsigned long addr )
                    << " KiB\n `- vysoka: " << tm->mem_upper << " KiB\n";
         } else if ( tag->type == MULTIBOOT_TAG_TYPE_MMAP ) {
             auto tm = reinterpret_cast< multiboot_tag_mmap * >( tag );
+            vout() << "-- mapa pameti (vice na seriove lince)\n";
             fal.init( tm ); // Initialise the frame allocator
             ser.puts( "\nAlokator ramcu nastaven.\n" );
         }
@@ -75,6 +80,9 @@ void kernel( unsigned long magic, unsigned long addr )
     mem::unmap_id_low();
 
     mem::PageAllocator pal( &fal );
+    mem::SubpageAllocator spal( &pal );
+    mem::allocator = &spal;
+
     pal.map( fal.alloc(), 0xD000'0000 );
 
     pal.alloc( 4,  /* user = */ true );
@@ -96,6 +104,24 @@ void kernel( unsigned long magic, unsigned long addr )
     pal.free( p2, 4 );
     pal.free( p3, 1 );
     */
+
+    auto m1 = kmalloc( 8 );
+    sout() << "kmalloc'd 8 at: " << m1 << '\n';
+    auto m2 = kmalloc( 127 );
+    sout() << "kmalloc'd 127 at: " << m2 << '\n';
+    auto m3 = kmalloc( 16 );
+    sout() << "kmalloc'd 16 at: " << m3 << '\n';
+    kfree( m1 );
+    m1 = kmalloc( 4 );
+    sout() << "kmalloc'd 4 at: " << m1 << '\n';
+    auto m1r = krealloc( m1, 8 );
+    sout() << "kremalloc'd 4 -> 8 at: " << m1r << '\n';
+    kfree( m1r );
+    sout() << "freed m1r\n";
+    kfree( m2 );
+    sout() << "freed m2\n";
+    kfree( m3 );
+    sout() << "freed m3\n";
 
 #if 0
     vga.puts( "Nyni ocekavam vstup na seriove lince.\n" );

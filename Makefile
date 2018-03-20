@@ -13,7 +13,7 @@ boot.img: a.out
 	$(MKRESCUE) -o $@ _boot
 	rm -rf _boot
 
-a.out: boot.o kernel.o debug.o mem/alloca.o mem/frames.o mem/paging.o mem/vmmap.o dev/io.o util.o
+a.out: boot.o kernel.o debug.o mem/alloca.o mem/frames.o mem/paging.o mem/vmmap.o mem/malloc.o dev/io.o util.o
 	$(LD) -o $@ -T linkscript $(CFLAGS) $(LDFLAGS) $^
 
 %.o: %.cpp
@@ -23,7 +23,7 @@ a.out: boot.o kernel.o debug.o mem/alloca.o mem/frames.o mem/paging.o mem/vmmap.
 	$(CC) -o $@ -c $(CFLAGS) $<
 
 test: boot.img
-	qemu-system-i386 -serial stdio -cdrom boot.img
+	qemu-system-i386 -serial mon:stdio -cdrom boot.img # monitor: ^A c
 
 clean:
 	rm -f boot.img a.out *.o dev/*.o mem/*.o
