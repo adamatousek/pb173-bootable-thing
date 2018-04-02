@@ -8,6 +8,10 @@
 #include <multiboot2.h>
 #include <panic.hpp>
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 namespace masys {
 namespace dbg {
 dev::Vga *vga;
@@ -16,6 +20,8 @@ dev::SerialLine *ser;
 namespace mem {
 SubpageAllocator *allocator;
 }
+
+void init_glue( mem::PageAllocator *, dev::SerialLine *, dev::Vga * );
 
 void kernel( unsigned long magic, unsigned long addr )
 {
@@ -83,6 +89,14 @@ void kernel( unsigned long magic, unsigned long addr )
     mem::SubpageAllocator spal( &pal );
     mem::allocator = &spal;
 
+    init_glue( &pal, &ser, &vga );
+
+    const char *foo = "It's printf, bitch!";
+    int fool = strlen( foo );
+
+    printf("I have only %d characters to say: %s\n", fool, foo );
+    fprintf(vgaout, "\nI have only %d characters to say: %s\n", fool, foo );
+
     pal.map( fal.alloc(), 0xD000'0000 );
 
     pal.alloc( 4,  /* user = */ true );
@@ -105,31 +119,15 @@ void kernel( unsigned long magic, unsigned long addr )
     pal.free( p3, 1 );
     */
 
-    auto m1 = kmalloc( 8 );
-    sout() << "kmalloc'd 8 at: " << m1 << '\n';
-    spal.dump_freelist();
-    auto m2 = kmalloc( 127 );
-    sout() << "kmalloc'd 127 at: " << m2 << '\n';
-    spal.dump_freelist();
-    auto m3 = kmalloc( 16 );
-    sout() << "kmalloc'd 16 at: " << m3 << '\n';
-    spal.dump_freelist();
-    kfree( m1 );
-    m1 = kmalloc( 4 );
-    sout() << "kmalloc'd 4 at: " << m1 << '\n';
-    spal.dump_freelist();
-    auto m1r = krealloc( m1, 8 );
-    sout() << "kremalloc'd 4 -> 8 at: " << m1r << '\n';
-    spal.dump_freelist();
-    kfree( m1r );
-    sout() << "freed m1r\n";
-    spal.dump_freelist();
-    kfree( m3 );
-    sout() << "freed m3\n";
-    spal.dump_freelist();
-    kfree( m2 );
-    sout() << "freed m2\n";
-    spal.dump_freelist();
+    auto m1 = malloc( 8 );
+    auto m2 = malloc( 127 );
+    auto m3 = malloc( 16 );
+    free( m1 );
+    m1 = malloc( 4 );
+    auto m1r = realloc( m1, 8 );
+    free( m1r );
+    free( m3 );
+    free( m2 );
 
 #if 0
     vga.puts( "Nyni ocekavam vstup na seriove lince.\n" );

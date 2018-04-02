@@ -2,5 +2,6 @@
 *.swo
 *.o
 *.img
+*.a
 a.out
 grub/

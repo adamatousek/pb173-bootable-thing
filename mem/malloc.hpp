@@ -61,21 +61,4 @@ extern SubpageAllocator *allocator;
 } /* masys */
 
 
-extern "C" {
-
-inline void * kmalloc( unsigned long size )
-{
-    return masys::mem::allocator->alloc( size );
-}
-inline void kfree( void *ptr )
-{
-    masys::mem::allocator->free( ptr );
-}
-inline void * krealloc( void *ptr, unsigned long size )
-{
-    return masys::mem::allocator->realloc( ptr, size );
-}
-
-}
-
 #endif /* end of include guard: _MASYS_MEM_MALLOC_HPP_ */

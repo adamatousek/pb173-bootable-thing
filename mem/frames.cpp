@@ -173,8 +173,10 @@ FrameSubAllocator * FrameAllocator::init_new_suballocator()
     auto bmphys = sub_st.alloc();
     auto bmvirt = ( 31 - sub_st.n_free ) * PAGE_SIZE +
                   reserved::FRAME_ALLOC_BITMAP_START;
+    /*
     dbg::sout() << " - new bitmap phys: 0x" << dbg::hex() << bmphys
                 << ", virt: 0x" << bmvirt << '\n';
+                */
     kernel_pgtbl[ ( bmvirt >> 12 ) & 0x3FF ]._raw = bmphys | 0x103;
     newsub->bitmap = reinterpret_cast< u8* >( bmvirt );
     newsub->clean( sz / PAGE_SIZE );
@@ -204,7 +206,7 @@ void FrameAllocator::free( u32 phys )
     sub->bitmap[ bytei ] &= ~( 0x80 >> biti );
     sub->n_free++;
 
-    dbg::sout() << " - freeing frame, phys. 0x" << dbg::hex() << phys << '\n';
+    //dbg::sout() << " - freeing frame, phys. 0x" << dbg::hex() << phys << '\n';
 }
 
 void FrameSubAllocator::clean( u16 npgs )
@@ -240,8 +242,10 @@ u32 FrameSubAllocator::alloc()
     bitmap[ bytei ] |= ( 0x80 >> biti );
     --n_free;
 
+    /*
     dbg::sout() << " - suballoc: selecting frame " << ( last - 1 )
         << ", phys. 0x" << dbg::hex() << base_addr + ( last - 1 ) * PAGE_SIZE << '\n';
+        */
     return base_addr + ( last - 1 ) * PAGE_SIZE;
 }
 

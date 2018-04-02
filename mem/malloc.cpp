@@ -30,7 +30,7 @@ void * SubpageAllocator::alloc( u32 size )
             return nullptr;
 
         chunk = reinterpret_cast< Chunk * >( newmem );
-        DBGEXPR(( &chunk->pre_footer ));
+        // DBGEXPR(( &chunk->pre_footer ));
         chunk->free( true );
         chunk->size( newpages * PAGE_SIZE - 16 );
         chunk->next() = nullptr;
@@ -38,8 +38,10 @@ void * SubpageAllocator::alloc( u32 size )
         chunk->following()->header.szfl = 0;
         if ( prev )
             prev->next() = chunk;
+        /*
         dbg::sout() << "- malloc: new chunk of size " << chunk->size() << " at "
                     << dbg::hex() << chunk << '\n';
+        */
     }
 
 
@@ -52,8 +54,10 @@ void * SubpageAllocator::alloc( u32 size )
         newfree->prev() = chunk;
         chunk->next() = newfree;
         chunk->size( size );
+        /*
         dbg::sout() << "- malloc: residual chunk of size " << newfree->size()
                     << " at " << dbg::hex() << newfree << '\n';
+        */
     } else {
         newfree = chunk->next();
     }
@@ -171,3 +175,20 @@ void SubpageAllocator::dump_freelist()
 
 } /* mem */
 } /* masys */
+
+extern "C" {
+
+void * malloc( unsigned long size )
+{
+    return masys::mem::allocator->alloc( size );
+}
+void free( void *ptr )
+{
+    masys::mem::allocator->free( ptr );
+}
+void * realloc( void *ptr, unsigned long size )
+{
+    return masys::mem::allocator->realloc( ptr, size );
+}
+
+}
