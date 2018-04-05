@@ -9,8 +9,8 @@ namespace masys {
     using u16 = unsigned short;
     using i16 = signed short;
 
-    using u32 = unsigned long;
-    using i32 = signed long;
+    using u32 = unsigned int;
+    using i32 = signed int;
 
     using u64 = unsigned long long;
     using i64 = signed long long;

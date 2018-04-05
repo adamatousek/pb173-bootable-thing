@@ -3,8 +3,10 @@
 #include <mem/vmmap.hpp>
 #include <mem/frames.hpp>
 #include <mem/malloc.hpp>
+#include <gdt.hpp>
 #include <util.hpp>
 #include <debug.hpp>
+#include <interrupt.hpp>
 #include <multiboot2.h>
 #include <panic.hpp>
 
@@ -20,6 +22,7 @@ dev::SerialLine *ser;
 namespace mem {
 SubpageAllocator *allocator;
 }
+InterruptManager *intr;
 
 void init_glue( mem::PageAllocator *, dev::SerialLine *, dev::Vga * );
 
@@ -97,9 +100,15 @@ void kernel( unsigned long magic, unsigned long addr )
     printf("I have only %d characters to say: %s\n", fool, foo );
     fprintf(vgaout, "\nI have only %d characters to say: %s\n", fool, foo );
 
-    pal.map( fal.alloc(), 0xD000'0000 );
+    //pal.map( fal.alloc(), 0xD000'0000 );
 
-    pal.alloc( 4,  /* user = */ true );
+    //pal.alloc( 4,  /* user = */ true );
+
+    auto syscall_stack_base = pal.alloc( 4 ) + 0x4000;
+    setup_flat_gdt( syscall_stack_base );
+
+    InterruptManager intman;
+    intr = &intman;
 
     auto p1 = pal.alloc( 2 ),
          p2 = pal.alloc( 4 );
@@ -128,6 +137,9 @@ void kernel( unsigned long magic, unsigned long addr )
     free( m1r );
     free( m3 );
     free( m2 );
+
+    asm( "int   $0xAD" );
+    asm( "int   $0x32" );
 
 #if 0
     vga.puts( "Nyni ocekavam vstup na seriove lince.\n" );
