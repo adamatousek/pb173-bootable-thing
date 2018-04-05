@@ -3,6 +3,8 @@
 
 #include <debug.hpp>
 
+#define MASYS_VERBOSE_MALLOC 0
+
 namespace masys {
 namespace mem {
 
@@ -30,18 +32,20 @@ void * SubpageAllocator::alloc( u32 size )
             return nullptr;
 
         chunk = reinterpret_cast< Chunk * >( newmem );
-        // DBGEXPR(( &chunk->pre_footer ));
-        chunk->free( true );
+#if MASYS_VERBOSE_MALLOC
+        DBGEXPR(( &chunk->pre_footer ));
+#endif
         chunk->size( newpages * PAGE_SIZE - 16 );
+        chunk->free( true );
         chunk->next() = nullptr;
         chunk->prev() = prev;
         chunk->following()->header.szfl = 0;
         if ( prev )
             prev->next() = chunk;
-        /*
+#if MASYS_VERBOSE_MALLOC
         dbg::sout() << "- malloc: new chunk of size " << chunk->size() << " at "
                     << dbg::hex() << chunk << '\n';
-        */
+#endif
     }
 
 
@@ -54,10 +58,10 @@ void * SubpageAllocator::alloc( u32 size )
         newfree->prev() = chunk;
         chunk->next() = newfree;
         chunk->size( size );
-        /*
+#if MASYS_VERBOSE_MALLOC
         dbg::sout() << "- malloc: residual chunk of size " << newfree->size()
                     << " at " << dbg::hex() << newfree << '\n';
-        */
+#endif
     } else {
         newfree = chunk->next();
     }

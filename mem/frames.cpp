@@ -14,6 +14,8 @@ extern masys::mem::PageTable kernel_pgtbl;
 
 }
 
+#define MASYS_VERBOSE_FALLOC 0
+
 namespace masys {
 namespace mem {
 
@@ -101,11 +103,13 @@ void FrameAllocator::init( const multiboot_tag_mmap *mmap )
         panic();
     }
 
+#if MASYS_VERBOSE_FALLOC
     dbg::sout() << "\nQueued memory areas:\n";
     for ( const auto & ma : queued ) {
         dbg::sout() << "- addr: " << dbg::hex() << ma.base_addr
                     << ", size: " << dbg::dec() << ma.size << '\n';
     }
+#endif
 
     queued[ i ].size -= 32 * PAGE_SIZE;
     sub_st.n_free = 32;
@@ -135,7 +139,9 @@ u32 FrameAllocator::alloc()
 
 FrameSubAllocator * FrameAllocator::init_new_suballocator()
 {
+#if MASYS_VERBOSE_FALLOC
     dbg::sout() << "Initializing new suballocator\n";
+#endif
     MemoryArea *ma = nullptr;
     for ( int i = 0; i < 8; ++i ) {
         if ( queued[ i ].size >= PAGE_SIZE ) {
@@ -147,13 +153,17 @@ FrameSubAllocator * FrameAllocator::init_new_suballocator()
     if ( ! ma )
         return nullptr;
 
+#if MASYS_VERBOSE_FALLOC
     dbg::sout() << "- using memory area {addr: 0x" << dbg::hex()
         << ma->base_addr <<", sz: 0x"<< ma->size << "}\n";
+#endif
 
     const u32 maxsz = PAGE_SIZE * PAGE_SIZE * 8;
     u32 sz = ( ma->size < maxsz ) ? ( ma->size & ~0xFFF ) : maxsz;
 
+#if MASYS_VERBOSE_FALLOC
     dbg::sout() << "- popping 0x" << dbg::hex() << sz << " bytes\n";
+#endif
 
     FrameSubAllocator *newsub = nullptr;
     for ( int i = 0; i < 32; ++i ) {
@@ -173,10 +183,10 @@ FrameSubAllocator * FrameAllocator::init_new_suballocator()
     auto bmphys = sub_st.alloc();
     auto bmvirt = ( 31 - sub_st.n_free ) * PAGE_SIZE +
                   reserved::FRAME_ALLOC_BITMAP_START;
-    /*
+#if MASYS_VERBOSE_FALLOC
     dbg::sout() << " - new bitmap phys: 0x" << dbg::hex() << bmphys
                 << ", virt: 0x" << bmvirt << '\n';
-                */
+#endif
     kernel_pgtbl[ ( bmvirt >> 12 ) & 0x3FF ]._raw = bmphys | 0x103;
     newsub->bitmap = reinterpret_cast< u8* >( bmvirt );
     newsub->clean( sz / PAGE_SIZE );
@@ -206,7 +216,9 @@ void FrameAllocator::free( u32 phys )
     sub->bitmap[ bytei ] &= ~( 0x80 >> biti );
     sub->n_free++;
 
-    //dbg::sout() << " - freeing frame, phys. 0x" << dbg::hex() << phys << '\n';
+#if MASYS_VERBOSE_FALLOC
+    dbg::sout() << " - freeing frame, phys. 0x" << dbg::hex() << phys << '\n';
+#endif
 }
 
 void FrameSubAllocator::clean( u16 npgs )
@@ -242,10 +254,10 @@ u32 FrameSubAllocator::alloc()
     bitmap[ bytei ] |= ( 0x80 >> biti );
     --n_free;
 
-    /*
+#if MASYS_VERBOSE_FALLOC
     dbg::sout() << " - suballoc: selecting frame " << ( last - 1 )
         << ", phys. 0x" << dbg::hex() << base_addr + ( last - 1 ) * PAGE_SIZE << '\n';
-        */
+#endif
     return base_addr + ( last - 1 ) * PAGE_SIZE;
 }
 

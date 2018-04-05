@@ -16,6 +16,8 @@ void __masys_flush_tlb();
 
 }
 
+#define MASYS_VERBOSE_PALLOC 0
+
 namespace masys {
 namespace mem {
 
@@ -37,10 +39,10 @@ namespace {
 
 u32 PageAllocator::alloc( u16 pages, bool user )
 {
-    /*
+#if MASYS_VERBOSE_PALLOC
     dbg::sout() << "Allocating " << pages << ( user ? " user" : " kernel" )
                 << " pages...\n";
-    */
+#endif
     u32 begin = find_available( pages,
             user ? reserved::USER_HEAP_BEGIN : reserved::HEAP_BEGIN,
             user ? reserved::USER_HEAP_END : reserved::HEAP_END );
@@ -58,10 +60,10 @@ void PageAllocator::free( u32 virt, u16 pages )
 {
     if ( virt == 0 )
         return;
-    /*
+#if MASYS_VERBOSE_PALLOC
     dbg::sout() << "Freeing " << pages << " pages from 0x" << dbg::hex()
                 << virt << "...\n";
-    */
+#endif
     while ( pages > 0 ) {
         u32 phys = pgtbl_e( virt ).address_base << 12;
         unmap( virt );
@@ -80,27 +82,27 @@ void PageAllocator::map( u32 phys, u32 virt, u32 flags )
         pgdir[ pgdir_i ]._raw = newphys | flags;
         for ( int i = 0; i < PAGEDIR_ENTRIES; ++i )
             pgtbl( virt )[ i ]._raw = 0;
-        /*
+#if MASYS_VERBOSE_PALLOC
         dbg::sout() << dbg::hex() << " - created new page table at Px"
                     << newphys << '\n';
-        */
+#endif
     }
     pgtbl_e( virt )._raw = phys | flags;
 
-    /*
+#if MASYS_VERBOSE_PALLOC
     dbg::sout() << dbg::hex() << " - mapped Vx" << virt
                 << " -> Px" << phys << '\n';
-    */
+#endif
 }
 
 void PageAllocator::unmap( u32 virt )
 {
     pgtbl_e( virt ).present = 0;
     __masys_invalidate_page( virt );
-    /*
+#if MASYS_VERBOSE_PALLOC
     dbg::sout() << dbg::hex() << " - unmapped Vx" << virt << " (-> Px"
                 << ( pgtbl_e( virt ).address_base << 12 ) << ")\n";
-    */
+#endif
 }
 
 u32 PageAllocator::find_available( u16 pages, u32 from, u32 to )
@@ -133,10 +135,10 @@ u32 PageAllocator::find_available( u16 pages, u32 from, u32 to )
         return 0;
     }
 
-    /*
+#if MASYS_VERBOSE_PALLOC
     dbg::sout() << " - found " << pages << " continuous pages from 0x"
                 << dbg::hex() << begin << '\n';
-    */
+#endif
 
     return begin;
 }
