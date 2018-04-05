@@ -5,6 +5,8 @@
 
 namespace masys {
 
+u32 *tss;
+
 extern "C" {
 // Defined in mem/paging.S
 void __masys_setup_gdt( u32 sz, void *gdt );
@@ -40,7 +42,7 @@ void setup_flat_gdt( unsigned syscall_stack )
     //gdt[ 9 ] = 0x00cb'f200;
     gdt[ 9 ] = 0x00cf'f200;
 
-    u32 *tss = new u32[ 26 ];
+    tss = new u32[ 26 ];
     tss[ 1 ] = syscall_stack;// ESP0
     tss[ 2 ] = 0x10; // SS0
     tss[ 25 ] = 0x0068'0000; // IOPB

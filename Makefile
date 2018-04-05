@@ -22,6 +22,7 @@ boot.img: a.out
 	rm -rf _boot
 
 a.out: boot.o kernel.o debug.o util.o gdt.o interrupt.o interrupt_asm.o \
+       userspace.o \
        mem/alloca.o mem/frames.o mem/paging.o mem/vmmap.o mem/malloc.o \
        dev/io.o libc_glue.o libc/pdclib.a
 	$(LD) -o $@ -T linkscript $(CFLAGS) $(LDFLAGS) $^ -static-libgcc -lgcc

@@ -25,7 +25,7 @@ __masys_setup_gdt:
             mov         %ax, %fs
             mov         %ax, %gs
             mov         %ax, %ss
-            mov         $0x28, %ax
+            mov         $0x2B, %ax
             ltr         %ax
             ret
 

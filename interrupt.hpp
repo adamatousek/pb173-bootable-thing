@@ -30,7 +30,8 @@ struct IdtEntry {
         offset_low = off;
         offset_high = off >> 16;
     }
-    void offset( void *ptr ) { offset( reinterpret_cast< u32 >( ptr ) ); }
+    template< typename T >
+    void offset( T *ptr ) { offset( reinterpret_cast< u32 >( ptr ) ); }
 };
 
 static_assert( sizeof( IdtEntry ) == 8, "IDT Entry has wrong size." );

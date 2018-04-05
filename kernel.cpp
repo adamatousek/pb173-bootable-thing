@@ -9,6 +9,7 @@
 #include <interrupt.hpp>
 #include <multiboot2.h>
 #include <panic.hpp>
+#include <userspace.hpp>
 
 #include <string.h>
 #include <stdlib.h>
@@ -23,6 +24,8 @@ namespace mem {
 SubpageAllocator *allocator;
 }
 InterruptManager *intr;
+
+extern u32 *tss;
 
 void init_glue( mem::PageAllocator *, dev::SerialLine *, dev::Vga * );
 
@@ -102,8 +105,6 @@ void kernel( unsigned long magic, unsigned long addr )
 
     //pal.map( fal.alloc(), 0xD000'0000 );
 
-    //pal.alloc( 4,  /* user = */ true );
-
     auto syscall_stack_base = pal.alloc( 4 ) + 0x4000;
     setup_flat_gdt( syscall_stack_base );
 
@@ -139,7 +140,25 @@ void kernel( unsigned long magic, unsigned long addr )
     free( m2 );
 
     asm( "int   $0xAD" );
-    asm( "int   $0x32" );
+
+    /* setup a very basic userspace */
+    auto u_stack = pal.alloc( 4,  /* user = */ true ) + 4 * PAGE_SIZE;
+    auto u_text_virt = pal.find_available( 4, mem::reserved::USER_HEAP_BEGIN,
+                                              mem::reserved::USER_HEAP_END );
+    auto u_text_phys = mem::PageAllocator::virt2phys(
+            reinterpret_cast< u32 >( hello_kernel ) );
+    for( int i = 0; i < 4; ++i ) {
+        pal.map( i * PAGE_SIZE + u_text_phys & ~0xFFF,
+                 i * PAGE_SIZE + u_text_virt, mem::PageEntry::DEFAULT_FLAGS_USER );
+    }
+
+    u_text_virt |= u_text_phys & 0xFFF;
+
+    sout() << "Vstupuji do userprostoru!\n";
+
+    userjmp( u_text_virt, u_stack, tss + 1 );
+
+    sout() << "Opoustim userprostor!\n";
 
 #if 0
     vga.puts( "Nyni ocekavam vstup na seriove lince.\n" );

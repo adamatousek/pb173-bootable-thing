@@ -12,6 +12,7 @@ extern "C" {
 void __masys_setup_idt( u32 sz, void *idt );
 void __masys_cli();
 void __masys_sti();
+void __masys_userleave();
 
 extern char intr_handler[ 8 * InterruptManager::N_INTERRUPTS ];
 extern InterruptHandler interrupt_handlers[ InterruptManager::N_INTERRUPTS ];
@@ -35,6 +36,10 @@ InterruptManager::InterruptManager()
     // Syscall
     idt[ SYSCALL_INTERRUPT ].dpl = 3;
     interrupt_handlers[ SYSCALL_INTERRUPT ] = syscall_handler;
+    // Userleave
+    idt[ 0xDA ].dpl = 3;
+    idt[ 0xDA ].offset( __masys_userleave );
+    interrupt_handlers[ 0xDA ] = syscall_handler;
     sti();
 }
 
