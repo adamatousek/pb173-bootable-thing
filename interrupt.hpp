@@ -39,10 +39,12 @@ static_assert( sizeof( IdtEntry ) == 8, "IDT Entry has wrong size." );
 class InterruptManager {
 public:
     static constexpr u32 N_INTERRUPTS = 256;
+    static constexpr u32 N_SYSCALLS = 32;
     static constexpr u8 SYSCALL_INTERRUPT = 0xAD;
 
 private:
     IdtEntry idt[ 265 ];
+    void register_syscall( unsigned char, void *, unsigned char );
 
 public:
     InterruptManager();
@@ -54,12 +56,18 @@ public:
             cli();
     }
 
+    template< typename ... Args >
+    void register_syscall( unsigned char num, int (*fn)(Args...) )
+    {
+        constexpr unsigned char argc = sizeof...( Args );
+        register_syscall( num, reinterpret_cast< void * >( fn ), argc );
+    }
+
     void cli();
     void sti();
 
     static void dummy_handler( unsigned );
     static void deadly_handler( unsigned );
-    static void syscall_handler( unsigned );
 };
 
 extern InterruptManager * intr;

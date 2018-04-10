@@ -10,7 +10,7 @@ CC = gcc
 LD = gcc
 inclflags = $(foreach i, $(incldirs), -I$i)
 CFLAGS = -ffreestanding -nostdlib -static -fno-stack-protector -fPIC -m32 \
-	 -D_PDCLIB_BUILD -std=c11 $(inclflags)
+	 -D_PDCLIB_BUILD -std=c11 -no-pie $(inclflags)
 
 pdclib.a: $(ofiles)
 	ar rcs $@ $(ofiles)

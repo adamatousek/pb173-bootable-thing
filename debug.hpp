@@ -55,6 +55,15 @@ OutStream sout();
 void hlt();
 
 } /* dbg */
+
+namespace syscall {
+    int debug( int n )
+    {
+        dbg::sout() << "From syscall::debug: \"" << n << "\"\n";
+        return n;
+    }
+} /* syscall */
+
 } /* masys */
 
 #define DBGEXPR( v ) dbg::sout() << "DBG: " << #v << " = " << v << '\n'

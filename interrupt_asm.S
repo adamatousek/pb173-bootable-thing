@@ -1,11 +1,11 @@
 #define ASM_FILE        1
+#define HIGHER_HALF     0xC0000000
 
         .section .text
         .global intr_handler, interrupt_handlers
         .global __masys_setup_idt, __masys_cli, __masys_sti
-        .global __masys_userjmp, __masys_userleave
+        .global __masys_userjmp
 
-        .extern panic
 
 intr_handler:
         .macro intrhead from, to
@@ -82,32 +82,8 @@ __masys_userjmp:
             push    %eax                # fake iret: destination
             iret
 
-__masys_userleave:
-            cli
-            mov     $0x10, %ax          # set data segments to kernel ones
-            mov     %ax, %ds
-            mov     %ax, %es
-            mov     %ax, %fs
-            mov     %ax, %gs
-
-            add     $20, %esp           # discard iret return pointers
-
-            pop     %eax                # magic value
-            cmp     $0x01D57ACC, %eax
-            jne     panic
-            pop     %eax                # address of TSS's esp0
-            mov     (%eax), %ecx        # top of kernel stack
-            pop     %edx                # top of the old interrupt stack
-            mov     %edx, (%eax)        # use interrupt stack for interrupts
-            pop     %edi
-            pop     %esi
-            pop     %ebx
-            pop     %ebp
-
-            sti
-            ret                         # Return as if from __masys_userjmp
-
         .section .data
         .global interrupt_handlers
 interrupt_handlers:
+        .align 4
         .fill 256, 4, 0x0

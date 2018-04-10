@@ -7,6 +7,7 @@
 #include <util.hpp>
 #include <debug.hpp>
 #include <interrupt.hpp>
+#include <syscall/syscall.hpp>
 #include <multiboot2.h>
 #include <panic.hpp>
 #include <userspace.hpp>
@@ -111,6 +112,10 @@ void kernel( unsigned long magic, unsigned long addr )
     InterruptManager intman;
     intr = &intman;
 
+    puts( "Interrupt manager set up." );
+    setup_syscalls();
+    puts( "Syscalls set up." );
+
     auto p1 = pal.alloc( 2 ),
          p2 = pal.alloc( 4 );
 
@@ -139,8 +144,6 @@ void kernel( unsigned long magic, unsigned long addr )
     free( m3 );
     free( m2 );
 
-    asm( "int   $0xAD" );
-
     /* setup a very basic userspace */
     auto u_stack = pal.alloc( 4,  /* user = */ true ) + 4 * PAGE_SIZE;
     auto u_text_virt = pal.find_available( 4, mem::reserved::USER_HEAP_BEGIN,
@@ -156,9 +159,9 @@ void kernel( unsigned long magic, unsigned long addr )
 
     sout() << "Vstupuji do userprostoru!\n";
 
-    userjmp( u_text_virt, u_stack, tss + 1 );
+    int exitval = userjmp( u_text_virt, u_stack, tss + 1 );
 
-    sout() << "Opoustim userprostor!\n";
+    printf( "Opoustim userprostor!\nNavratova hodnota = 0x%x\n", exitval );
 
 #if 0
     vga.puts( "Nyni ocekavam vstup na seriove lince.\n" );

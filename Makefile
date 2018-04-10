@@ -11,7 +11,8 @@ cincldirs = libc/includes libc/internals libc/opt/nothread\
 cinclflags = $(foreach i, $(cincldirs), -I$i)
 
 CFLAGS = -std=c++14 -ffreestanding -nostdlib -static -fno-stack-protector -m32 \
-	 -fno-PIC -I. -fno-rtti -fno-exceptions $(cinclflags) -D_PDCLIB_BUILD -g
+	 -fno-PIC -I. -fno-rtti -fno-exceptions $(cinclflags) -D_PDCLIB_BUILD \
+	 -g -no-pie
 
 boot.img: a.out
 	mkdir -p _boot/boot/grub
@@ -22,7 +23,7 @@ boot.img: a.out
 	rm -rf _boot
 
 a.out: boot.o kernel.o debug.o util.o gdt.o interrupt.o interrupt_asm.o \
-       userspace.o \
+       syscall/syscall_asm.o syscall/syscall.o syscall/cease.o userspace.o \
        mem/alloca.o mem/frames.o mem/paging.o mem/vmmap.o mem/malloc.o \
        dev/io.o libc_glue.o libc/pdclib.a
 	$(LD) -o $@ -T linkscript $(CFLAGS) $(LDFLAGS) $^ -static-libgcc -lgcc
@@ -33,8 +34,8 @@ a.out: boot.o kernel.o debug.o util.o gdt.o interrupt.o interrupt_asm.o \
 %.o: %.S
 	$(CC) -o $@ -c $(CFLAGS) $<
 
-#libc/pdclib.a:
-#	$(MAKE) -C libc
+libc/pdclib.a:
+	$(MAKE) -C libc
 
 test: boot.img
 	qemu-system-i386 -serial mon:stdio -cdrom boot.img # monitor: ^A c
