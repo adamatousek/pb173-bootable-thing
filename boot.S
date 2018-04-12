@@ -1,8 +1,12 @@
 #define ASM_FILE        1
 // Stack size shall be at most 4M
-#define STACK_SIZE      (5 * 0x1000)
-#define HIGHER_HALF     0xC0000000
-#define VIRT_STACK      0xFFC00000
+#include "config.hpp"
+#define PAGE_SIZE       MASYS_PAGE_SIZE
+#define STACK_SIZE      (5 * PAGE_SIZE)
+#define HIGHER_HALF     MASYS_HIGHER_HALF
+#define VIRT_STACK      MASYS_VIRT_STACK
+#define VIDEO           MASYS_VGA_MEMORY
+
 #include "multiboot2.h"
 
         .section .multiboot
@@ -41,8 +45,6 @@ multiboot_header_end:
         .globl  start, _start, panic, __masys_halt, __masys_hlt
         .type _start, @function
 
-#define VIDEO 0xC00B8000
-
 _start:
 start:
 multiboot_entry:
@@ -65,7 +67,7 @@ multiboot_entry:
 higher:
         /* map the stack base to 4G minus 4M */
         movl    $((STACK_SIZE >> 12) - 1), %ecx
-        movl    $(stack_pgtbl + 0x1000 - (STACK_SIZE >> 10) ), %ebx
+        movl    $(stack_pgtbl + PAGE_SIZE - (STACK_SIZE >> 10) ), %ebx
 loop1:
         movl    %ecx, %eax
         shl     $12, %eax
@@ -121,7 +123,6 @@ flags:
         jns     loop_flags_row
 __masys_hlt:
         hlt
-#undef VIDEO
 
         .section .rodata
         .ascii  "  Nyni muzete pocitac bezpecne vypnout  "
@@ -132,7 +133,7 @@ panic_message:
 #define HH_PGDIR_IDX (HIGHER_HALF >> 22)
         .section .paging
         .global page_directory, kernel_pgtbl
-        .align 0x1000
+        .align PAGE_SIZE
 page_directory:
         .long 0x00000083                              # Id-map low 4M
         .fill (HH_PGDIR_IDX - 1), 4, 0x0              # Nothing
@@ -141,12 +142,18 @@ page_directory:
         .long (stack_pgtbl - HIGHER_HALF + 0x103)     # Page table for the stack
         .long (page_directory - HIGHER_HALF + 0x103)  # Page directory itself
 
-        .align 0x1000
+        .align PAGE_SIZE
 kernel_pgtbl:
-        .fill 1024, 4, 0x0                          # Nothing yet
+        .fill PAGE_SIZE, 4, 0x0                       # Nothing yet
 
-        .align 0x1000
+        .align PAGE_SIZE
 stack_pgtbl:
-        .fill 1024, 4, 0x0                          # Nothing yet
+        .fill PAGE_SIZE, 4, 0x0                       # Nothing yet
 
         .comm   stack, STACK_SIZE /* the stack */
+
+#undef PAGE_SIZE
+#undef HIGHER_HALF
+#undef VIRT_STACK
+#undef VIDEO
+#undef HH_PGDIR_IDX

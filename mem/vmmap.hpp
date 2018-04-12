@@ -23,6 +23,8 @@ public:
     static u32 virt2phys( u32 virt );
 };
 
+extern PageAllocator *page_allocator;
+
 // Replaces the 4 MiB mapping with a page table
 void remap_kernel_text();
 

@@ -22,6 +22,7 @@ dev::Vga *vga;
 dev::SerialLine *ser;
 } /* dbg */
 namespace mem {
+PageAllocator *page_allocator;
 SubpageAllocator *allocator;
 }
 InterruptManager *intr;
@@ -94,6 +95,7 @@ void kernel( unsigned long magic, unsigned long addr )
 
     mem::PageAllocator pal( &fal );
     mem::SubpageAllocator spal( &pal );
+    mem::page_allocator = &pal;
     mem::allocator = &spal;
 
     init_glue( &pal, &ser, &vga );
@@ -146,15 +148,16 @@ void kernel( unsigned long magic, unsigned long addr )
 
     /* setup a very basic userspace */
     auto u_stack = pal.alloc( 4,  /* user = */ true ) + 4 * PAGE_SIZE;
-    auto u_text_virt = pal.find_available( 4, mem::reserved::USER_HEAP_BEGIN,
+    auto u_text_virt = pal.find_available( 8, mem::reserved::USER_HEAP_BEGIN,
                                               mem::reserved::USER_HEAP_END );
     auto u_text_phys = mem::PageAllocator::virt2phys(
             reinterpret_cast< u32 >( hello_kernel ) );
-    for( int i = 0; i < 4; ++i ) {
-        pal.map( i * PAGE_SIZE + u_text_phys & ~0xFFF,
+    for( int i = 0; i < 8; ++i ) {
+        pal.map( (i - 4) * PAGE_SIZE + u_text_phys & ~0xFFF,
                  i * PAGE_SIZE + u_text_virt, mem::PageEntry::DEFAULT_FLAGS_USER );
     }
 
+    u_text_virt += 4 * PAGE_SIZE;
     u_text_virt |= u_text_phys & 0xFFF;
 
     sout() << "Vstupuji do userprostoru!\n";

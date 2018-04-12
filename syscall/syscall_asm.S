@@ -1,7 +1,6 @@
 #define ASM_FILE        1
-/* Yes, ugly as shit and should be defined elsewhere in order not to repeat */
-#define HIGHER_HALF     0xC0000000
-#define N_SYSCALLS      32
+#include "config.hpp"
+// Yes, fuj.
 #define ENOSYS          38
 #define EINVAL          22
 
@@ -11,18 +10,18 @@
         .global syscall
 
 __masys_syscall_handler:
-        cmp     $(N_SYSCALLS), %eax
+        cmp     $(MASYS_N_SYSCALLS), %eax
         jge     enosys
-        lea     syscall_fn_table(, %eax, 4), %edx
+        mov     syscall_fn_table(, %eax, 4), %edx
         cmp     $0, %edx
         je      enosys
         pusha
         mov     44(%esp), %ebx           # user %esp
-        add     $4, %ebx                 # user %esp + 4 (argument address)
-        js      badptr
+        cmp     $0, %ebx
+        jle     badptr
         movzbl  syscall_argc_table(, %eax, 1), %ecx
-        lea     (%ebx, %ecx, 4), %ebx    # after last argument
-        cmp     $(HIGHER_HALF), %ebx
+        lea     (%ebx, %ecx, 4), %eax    # after last argument
+        cmp     $(MASYS_HIGHER_HALF), %eax
         jl      badptr
         mov     %esp, %ebp
 copyargs_beg:
@@ -34,7 +33,7 @@ copyargs_beg:
 copyargs_end:
         mov     %edx, %eax
         xor     %edx, %edx
-        call    *(%eax)
+        call    *%eax
         mov     %ebp, %esp
         mov     %eax, 28(%esp)      # put syscall's low return to future eax
         mov     %edx, 20(%esp)      # put syscall's high return to future edx
@@ -50,15 +49,18 @@ badptr:                             # probably just raise #GP?
 
 
 syscall:
-        mov     4(%esp), %eax
+        pop     %ebx
+        pop     %eax
         int     $0xAD
+        sub     $4, %esp
+        push    %ebx
         ret
-
 
         .section .data
 syscall_fn_table:
         .align 4
-        .fill N_SYSCALLS, 4, 0x0
+        .fill MASYS_N_SYSCALLS, 4, 0x0
 
 syscall_argc_table:
-        .fill N_SYSCALLS, 1, 0x0
+        .fill MASYS_N_SYSCALLS, 1, 0x0
+

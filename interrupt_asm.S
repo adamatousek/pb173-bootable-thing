@@ -1,5 +1,5 @@
 #define ASM_FILE        1
-#define HIGHER_HALF     0xC0000000
+#include "config.hpp"
 
         .section .text
         .global intr_handler, interrupt_handlers
@@ -68,7 +68,7 @@ __masys_userjmp:
             push    %edi
             push    %edx                # save old interrupt stack...
             push    %eax                # ...and where to recover it to
-            push    $0x01D57ACC         # magic value "oldstack"
+            push    $(MASYS_STACK_MAGIC)
             mov     %esp, (%eax)        # use kernel stack for interrupts
 
             mov     8(%ebp), %eax
@@ -86,4 +86,4 @@ __masys_userjmp:
         .global interrupt_handlers
 interrupt_handlers:
         .align 4
-        .fill 256, 4, 0x0
+        .fill MASYS_N_INTERRUPTS, 4, 0x0

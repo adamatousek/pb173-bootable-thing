@@ -36,4 +36,13 @@ void hlt()
 }
 
 } /* dbg */
+
+namespace syscall {
+    int debug( int n )
+    {
+        dbg::sout() << "From syscall::debug: 0x" << dbg::hex() << n << "\n";
+        return n;
+    }
+} /* syscall */
+
 } /* masys */

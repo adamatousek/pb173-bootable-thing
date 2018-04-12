@@ -2,6 +2,7 @@
 #define _MASYS_INTERRUPT_HPP_
 
 #include "types.hpp"
+#include "config.hpp"
 
 namespace masys {
 
@@ -38,9 +39,9 @@ static_assert( sizeof( IdtEntry ) == 8, "IDT Entry has wrong size." );
 
 class InterruptManager {
 public:
-    static constexpr u32 N_INTERRUPTS = 256;
-    static constexpr u32 N_SYSCALLS = 32;
-    static constexpr u8 SYSCALL_INTERRUPT = 0xAD;
+    static constexpr u32 N_INTERRUPTS = MASYS_N_INTERRUPTS;
+    static constexpr u32 N_SYSCALLS = MASYS_N_SYSCALLS;
+    static constexpr u8 SYSCALL_INTERRUPT = MASYS_SYSCALL_INTERRUPT;
 
 private:
     IdtEntry idt[ 265 ];
@@ -56,8 +57,8 @@ public:
             cli();
     }
 
-    template< typename ... Args >
-    void register_syscall( unsigned char num, int (*fn)(Args...) )
+    template< typename Ret, typename ... Args >
+    void register_syscall( unsigned char num, Ret (*fn)(Args...) )
     {
         constexpr unsigned char argc = sizeof...( Args );
         register_syscall( num, reinterpret_cast< void * >( fn ), argc );

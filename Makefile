@@ -23,7 +23,8 @@ boot.img: a.out
 	rm -rf _boot
 
 a.out: boot.o kernel.o debug.o util.o gdt.o interrupt.o interrupt_asm.o \
-       syscall/syscall_asm.o syscall/syscall.o syscall/cease.o userspace.o \
+       syscall/syscall_asm.o syscall/syscall.o syscall/cease.o syscall/obtain.o \
+       userspace.o \
        mem/alloca.o mem/frames.o mem/paging.o mem/vmmap.o mem/malloc.o \
        dev/io.o libc_glue.o libc/pdclib.a
 	$(LD) -o $@ -T linkscript $(CFLAGS) $(LDFLAGS) $^ -static-libgcc -lgcc
@@ -44,4 +45,4 @@ debug: boot.img
 	qemu-system-i386 -S -s -serial mon:stdio -cdrom boot.img # monitor: ^A c
 
 clean:
-	rm -f boot.img a.out *.o dev/*.o mem/*.o
+	rm -f boot.img a.out *.o dev/*.o mem/*.o syscall/*.o

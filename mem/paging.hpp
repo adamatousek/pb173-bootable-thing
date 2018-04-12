@@ -1,9 +1,9 @@
 #ifndef _MASYS_MEM_PAGING_HPP_
 #define _MASYS_MEM_PAGING_HPP_
 
-/* Mapping of kernel memory
- * 0xC000'0000 - 0xC000'0fff -- reserved for the heck of it
- * 0xC000'1000 - 0xC000'101f -- reserved for bitmaps of frame allocator
+/* Mapping of kernel memory (defined in config.hpp)
+ * 0xC000'0000 - 0xC000'0FFF -- reserved for the heck of it
+ * 0xC000'1000 - 0xC000'101F -- reserved for bitmaps of frame allocator
  * 0xC00B'8000 - 0xC00B'9000 -- memory mapped VGA text
  * 0xC010'0000 - ?           -- kernel text (at most 3 MiB)
  * 0xC040'0000 - ?           -- kernel heap
@@ -11,25 +11,12 @@
  * 0xFFC0'0000               -- current page directory
  */
 
-#include<types.hpp>
+#include <types.hpp>
+#include <config.hpp>
 
 namespace masys {
 
-const size_t PAGE_SIZE = 0x1000;
-const size_t PAGEDIR_ENTRIES = 1024;
-const u32 HIGHER_HALF = 0xC0000000;
-
 namespace mem {
-
-namespace reserved {
-const u32 USER_HEAP_BEGIN = 0x1000;
-const u32 USER_HEAP_END = HIGHER_HALF;
-const u32 FRAME_ALLOC_BITMAP_START = HIGHER_HALF + 0x1000;
-const u32 HEAP_BEGIN = HIGHER_HALF + 0x400000;
-const u32 STACK_BOTTOM = 0xFFC00000;
-const u32 HEAP_END = STACK_BOTTOM - 0x400000;
-const u32 PAGE_DIRECTORY = STACK_BOTTOM;
-} /* reserved */
 
 struct PageEntry {
     union alignas( 4 ) {
