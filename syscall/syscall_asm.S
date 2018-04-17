@@ -10,6 +10,7 @@
         .global syscall
 
 __masys_syscall_handler:
+        sti
         cmp     $(MASYS_N_SYSCALLS), %eax
         jge     enosys
         mov     syscall_fn_table(, %eax, 4), %edx
@@ -46,7 +47,6 @@ badptr:                             # probably just raise #GP?
         popa
         mov     $(-EINVAL), %eax
         iret
-
 
 syscall:
         pop     %ebx

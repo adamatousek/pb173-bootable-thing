@@ -4,5 +4,4 @@
 | MM M MM  AAAAAAA    SSS     YY  YY     SSS   |
 | MM   MM  AA   AA       SS     YY          SS |
 | MM   MM  AA   AA  SSSSS       YY     SSSSS   |
-`-------------< v. 0.0.0.0.0.0.1 >-------------'
-
+`-------------< v. 0.0.0.0.0.0.2 >-------------'

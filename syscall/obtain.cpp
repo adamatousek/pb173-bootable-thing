@@ -8,7 +8,7 @@ namespace syscall {
 unsigned obtain( unsigned npages, unsigned flags )
 {
     if ( flags )
-        return ENOTSUP;
+        return EINVAL;
     if ( npages > 786400 )
         return ENOMEM; /* ENASRAT, noone needs so much mem */;
 

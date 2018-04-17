@@ -14,6 +14,7 @@ void setup_syscalls()
     intr->register_syscall( 1, syscall::debug );
     intr->register_syscall( 2, syscall::prove );
     intr->register_syscall( 3, syscall::obtain );
+    intr->register_syscall( 5, syscall::inscribe );
 }
 
 namespace syscall {

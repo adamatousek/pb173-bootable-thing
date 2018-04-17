@@ -67,21 +67,12 @@ void kernel( unsigned long magic, unsigned long addr )
     auto tag = reinterpret_cast< multiboot_tag * >( addr + 8 );
 
     while ( tag->type != MULTIBOOT_TAG_TYPE_END ) {
-        if ( tag->type == MULTIBOOT_TAG_TYPE_MODULE ) {
-            auto tm = reinterpret_cast< multiboot_tag_module * >( tag );
-            vout() << "-- modul ( cmdline: \"" << tm->cmdline << "\") s obsahem:\n";
-
-            for ( auto d = reinterpret_cast< const char * >( tm->mod_start );
-                       d < reinterpret_cast< const char * >( tm->mod_end );
-                       ++d )
-                vga.putch( *d );
-        } else if ( tag->type == MULTIBOOT_TAG_TYPE_BASIC_MEMINFO ) {
+        if ( tag->type == MULTIBOOT_TAG_TYPE_BASIC_MEMINFO ) {
             auto tm = reinterpret_cast< multiboot_tag_basic_meminfo * >( tag );
             vout() << "-- pamet\n `-- nizka: " << tm->mem_lower
                    << " KiB\n `- vysoka: " << tm->mem_upper << " KiB\n";
         } else if ( tag->type == MULTIBOOT_TAG_TYPE_MMAP ) {
             auto tm = reinterpret_cast< multiboot_tag_mmap * >( tag );
-            vout() << "-- mapa pameti (vice na seriove lince)\n";
             fal.init( tm ); // Initialise the frame allocator
             ser.puts( "\nAlokator ramcu nastaven.\n" );
         }
@@ -90,13 +81,52 @@ void kernel( unsigned long magic, unsigned long addr )
                   + tag->size + 7 ) & 0xfffffff8UL );
     }
 
-    /* Cancel id-mapping */
-    mem::unmap_id_low();
+    // TODO: ensure that we don't override the multiboot modules
 
     mem::PageAllocator pal( &fal );
     mem::SubpageAllocator spal( &pal );
     mem::page_allocator = &pal;
     mem::allocator = &spal;
+
+    Executable hello;
+
+    sout() << "Loading modules...\n";
+
+    tag = reinterpret_cast< multiboot_tag * >( addr + 8 );
+    while ( tag->type != MULTIBOOT_TAG_TYPE_END ) {
+        if ( tag->type == MULTIBOOT_TAG_TYPE_MODULE ) {
+            auto tm = reinterpret_cast< multiboot_tag_module * >( tag );
+            vout() << "-- modul ( Px" << dbg::hex() << tm->mod_start << " - Px"
+                   << tm->mod_end << ", cmdline: \"" << tm->cmdline << "\") ";
+            if ( strstr( tm->cmdline, "exec" ) == tm->cmdline ) {
+                vout() << "s binarnim obsahem\n";
+                u32 sz = tm->mod_end - tm->mod_start;
+                u32 pgsz = ( sz + PAGE_SIZE - 1 ) / PAGE_SIZE;
+                u32 dst = pal.alloc( pgsz );
+                memcpy( (char *) dst, (char *) tm->mod_start, sz );
+                if ( strstr( tm->cmdline, "exec.data" ) == tm->cmdline ) {
+                    hello.data_module = dst;
+                    hello.data_pages = pgsz;
+                } else if ( strstr( tm->cmdline, "exec.text" ) == tm->cmdline ) {
+                    hello.text_module = dst;
+                    hello.text_pages = pgsz;
+                }
+            } else {
+                vout() << "s obsahem:\n";
+
+                for ( auto d = reinterpret_cast< const char * >( tm->mod_start );
+                        d < reinterpret_cast< const char * >( tm->mod_end );
+                        ++d )
+                    vga.putch( *d );
+            }
+        }
+        tag = reinterpret_cast< multiboot_tag * >(
+                ( ( reinterpret_cast< unsigned long >( tag ))
+                  + tag->size + 7 ) & 0xfffffff8UL );
+    }
+
+    /* Cancel id-mapping */
+    mem::unmap_id_low();
 
     init_glue( &pal, &ser, &vga );
 
@@ -148,21 +178,20 @@ void kernel( unsigned long magic, unsigned long addr )
 
     /* setup a very basic userspace */
     auto u_stack = pal.alloc( 4,  /* user = */ true ) + 4 * PAGE_SIZE;
-    auto u_text_virt = pal.find_available( 8, mem::reserved::USER_HEAP_BEGIN,
-                                              mem::reserved::USER_HEAP_END );
-    auto u_text_phys = mem::PageAllocator::virt2phys(
-            reinterpret_cast< u32 >( hello_kernel ) );
-    for( int i = 0; i < 8; ++i ) {
-        pal.map( (i - 4) * PAGE_SIZE + u_text_phys & ~0xFFF,
-                 i * PAGE_SIZE + u_text_virt, mem::PageEntry::DEFAULT_FLAGS_USER );
+    auto u_text_phys = mem::PageAllocator::virt2phys( hello.text_module );
+    for( int i = 0; i < hello.text_pages; ++i ) {
+        pal.map( i * PAGE_SIZE + u_text_phys, i * PAGE_SIZE + 0x0C0DE000,
+                 mem::PageEntry::DEFAULT_FLAGS_USER );
     }
-
-    u_text_virt += 4 * PAGE_SIZE;
-    u_text_virt |= u_text_phys & 0xFFF;
+    auto u_data_phys = mem::PageAllocator::virt2phys( hello.data_module );
+    for( int i = 0; i < hello.data_pages; ++i ) {
+        pal.map( i * PAGE_SIZE + u_data_phys, i * PAGE_SIZE + 0x0DA7A000,
+                 mem::PageEntry::DEFAULT_FLAGS_USER );
+    }
 
     sout() << "Vstupuji do userprostoru!\n";
 
-    int exitval = userjmp( u_text_virt, u_stack, tss + 1 );
+    int exitval = userjmp( 0x0C0DE000, u_stack, tss + 1 );
 
     printf( "Opoustim userprostor!\nNavratova hodnota = 0x%x\n", exitval );
 

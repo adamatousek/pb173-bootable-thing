@@ -44,6 +44,18 @@ int prove();
  */
 unsigned obtain( unsigned, unsigned );
 
+/* syscall 4
+ * TODO
+ */
+
+/* syscall 5
+ * int inscribe( fd_t fd, const char *data, unsigned size, unsigned flags )
+ * writes bytes from data to file descriptor fd
+ * flags must be 0
+ * returns number of bytes actually written
+ */
+int inscribe( unsigned, const char*, unsigned, unsigned );
+
 } /* syscall */
 
 } /* masys */

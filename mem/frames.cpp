@@ -198,7 +198,7 @@ void FrameAllocator::free( u32 phys )
 {
     const u32 maxsz = PAGE_SIZE * PAGE_SIZE * 8;
     FrameSubAllocator *sub = nullptr;
-    for ( int i = 0; i < 32; ++i ) {
+    for ( int i = 31; i >= 0; --i ) {
         if ( subs[ i ].base_addr <= phys &&
              phys < subs[ i ].base_addr + maxsz )
         {

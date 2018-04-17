@@ -34,6 +34,11 @@ multiboot_header:
         .long 12                        /* tag size */
         .long (start - HIGHER_HALF)     /* entry address */
 
+        //.align 8 /* each tag must be aligned separately */
+        //.short MULTIBOOT_HEADER_TAG_MODULE_ALIGN
+        //.short 0                        /* flags */
+        //.long 8                         /* tag size */
+
         .align 8 /* each tag must be aligned separately */
         .short MULTIBOOT_HEADER_TAG_END /* tag id */
         .short 0                        /* flags */
