@@ -1,4 +1,6 @@
-.PHONY: kernel user libc/pdclib_kernel.a libc/pdclib_user.a test clean
+.PHONY: all kernel user libc/pdclib_kernel.a libc/pdclib_user.a test clean
+
+all: boot.img
 
 kernel: pdcplatform = masys_kernel
 kernel: cust_cflags = -I.
@@ -22,6 +24,13 @@ CFLAGS = -std=c++14 -ffreestanding -nostdlib -static -fno-stack-protector -m32 \
 	 -fno-PIC -fno-rtti -fno-exceptions $(cinclflags) -D_PDCLIB_BUILD \
 	 -g -no-pie $(cust_cflags)
 
+kofiles = boot.o kernel.o debug.o util.o gdt.o interrupt.o interrupt_asm.o \
+          syscall/syscall_asm.o syscall/syscall.o syscall/cease.o \
+	  syscall/obtain.o syscall/inscribe.o \
+       	  userspace.o \
+       	  mem/alloca.o mem/frames.o mem/paging.o mem/vmmap.o mem/malloc.o \
+       	  dev/io.o libc_glue.o
+
 boot.img: kernel user
 	mkdir -p _boot/boot/grub
 	cp a.out _boot/
@@ -31,12 +40,7 @@ boot.img: kernel user
 	$(MKRESCUE) -o $@ _boot
 	rm -rf _boot
 
-a.out: boot.o kernel.o debug.o util.o gdt.o interrupt.o interrupt_asm.o \
-       syscall/syscall_asm.o syscall/syscall.o syscall/cease.o syscall/obtain.o \
-       syscall/inscribe.o \
-       userspace.o \
-       mem/alloca.o mem/frames.o mem/paging.o mem/vmmap.o mem/malloc.o \
-       dev/io.o libc_glue.o libc/pdclib_kernel.a
+a.out: $(kofiles) libc/pdclib_kernel.a
 	$(LD) -o $@ -T linkscript $(CFLAGS) $(LDFLAGS) $^ -static-libgcc -lgcc
 
 %.o: %.cpp

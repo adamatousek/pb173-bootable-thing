@@ -4,10 +4,10 @@
 namespace masys {
 
 struct Executable {
-    u32 text_module,
-        data_module;
-    u32 text_pages,
-        data_pages;
+    unsigned text_module,
+             data_module;
+    unsigned text_pages,
+             data_pages;
 };
 
 int userjmp( unsigned text, unsigned stack, unsigned *tss_esp0 );

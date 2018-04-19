@@ -2,37 +2,52 @@
 #include "config.hpp"
 
         .section .text
-        .global intr_handler, interrupt_handlers
+        .global __masys_cr2
+        .global __masys_intr_handler, __masys_interrupt_handlers
         .global __masys_setup_idt, __masys_cli, __masys_sti
         .global __masys_userjmp
 
+__masys_cr2:
+            mov     %cr2, %eax
+            ret
 
-intr_handler:
-        .macro intrhead from, to
+        .align 8
+__masys_intr_handler:
+        .macro intrhead from, to, target
         .if (\to - \from)
         .align 8
         push    %eax                    # 1-byte opcode
         mov     $(\from), %al           # 2-byte opcode
-        jmp     intr_common             # 5-byte or 2-byte opcode
-        intrhead "(\from + 1)", \to
+        jmp     \target                 # 5-byte or 2-byte opcode
+        intrhead "(\from + 1)", \to, \target
         .endif
         .endm
-            intrhead 0 100
-            intrhead 100 200
-            intrhead 200 256
-
-intr_common:
+            intrhead 0   8   intr_no_errorcode
+            intrhead 8   9   intr_no_errorcode
+            intrhead 9   10  intr_no_errorcode
+            intrhead 10  14  intr_errorcode
+            intrhead 14  15  intr_errorcode
+            intrhead 15  100 intr_no_errorcode
+            intrhead 100 200 intr_no_errorcode
+            intrhead 200 256 intr_no_errorcode
+intr_no_errorcode:
+            pushl   (%esp)              # old eax
+            movl    $0xBADC0DE, 4(%esp) # dummy error code
+intr_errorcode:
             movzx   %al, %eax
             pushal
+            push    40(%esp)            # copy ireturn address to top
+            push    40(%esp)            # copy error code to top
             push    %eax
-            lea     interrupt_handlers(, %eax, 4), %eax
+            lea     __masys_interrupt_handlers(, %eax, 4), %eax
             cmp     $0, %eax
             jz      intr_finish
             call    *(%eax)
 intr_finish:
-            add     $4, %esp
+            add     $12, %esp
             popal
             pop     %eax
+            add     $4, %esp            # error code
             iret
 
 
@@ -83,7 +98,7 @@ __masys_userjmp:
             iret
 
         .section .data
-        .global interrupt_handlers
-interrupt_handlers:
+        .global __masys_interrupt_handlers
+__masys_interrupt_handlers:
         .align 4
         .fill MASYS_N_INTERRUPTS, 4, 0x0

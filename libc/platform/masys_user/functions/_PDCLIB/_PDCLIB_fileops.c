@@ -21,7 +21,12 @@ static bool readf( _PDCLIB_fd_t self, void * buf, size_t length,
 static bool writef( _PDCLIB_fd_t self, const void * buf, size_t length, 
                    size_t * numBytesWritten )
 {
-    errno = ENOTSUP;
+    int w = inscribe( self.sval, buf, length, 0 );
+    if ( w >= 0 ) {
+        *numBytesWritten = w;
+        return true;
+    }
+    *numBytesWritten = 0;
     return false;
 }
 static bool seekf( _PDCLIB_fd_t self, int_fast64_t offset, int whence,

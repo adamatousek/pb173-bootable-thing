@@ -67,8 +67,8 @@ public:
     void cli();
     void sti();
 
-    static void dummy_handler( unsigned );
-    static void deadly_handler( unsigned );
+    static void dummy_handler( unsigned, unsigned, unsigned );
+    static void deadly_handler( unsigned, unsigned, unsigned );
 };
 
 extern InterruptManager * intr;

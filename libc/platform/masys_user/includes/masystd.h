@@ -10,7 +10,7 @@ typedef unsigned short fd_t;
 /* Generic system call wrapper */
 long long syscall( int number, ... );
 
-void cease( int exitnum );
+void cease( int exitnum ) __attribute__((noreturn));
 int sysping( int test );
 int prove();
 void * obtain( unsigned pages, unsigned flags );

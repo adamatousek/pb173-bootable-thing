@@ -6,21 +6,21 @@
 
         .section .text
         .global __masys_syscall_handler
-        .global syscall_fn_table, syscall_argc_table
+        .global __masys_syscall_fn_table, __masys_syscall_argc_table
         .global syscall
 
 __masys_syscall_handler:
         sti
         cmp     $(MASYS_N_SYSCALLS), %eax
         jge     enosys
-        mov     syscall_fn_table(, %eax, 4), %edx
+        mov     __masys_syscall_fn_table(, %eax, 4), %edx
         cmp     $0, %edx
         je      enosys
         pusha
         mov     44(%esp), %ebx           # user %esp
         cmp     $0, %ebx
         jle     badptr
-        movzbl  syscall_argc_table(, %eax, 1), %ecx
+        movzbl  __masys_syscall_argc_table(, %eax, 1), %ecx
         lea     (%ebx, %ecx, 4), %eax    # after last argument
         cmp     $(MASYS_HIGHER_HALF), %eax
         jl      badptr
@@ -57,10 +57,10 @@ syscall:
         ret
 
         .section .data
-syscall_fn_table:
+__masys_syscall_fn_table:
         .align 4
         .fill MASYS_N_SYSCALLS, 4, 0x0
 
-syscall_argc_table:
+__masys_syscall_argc_table:
         .fill MASYS_N_SYSCALLS, 1, 0x0
 

@@ -22,7 +22,7 @@ public:
         unsigned written = 0;
         while ( written++ < size && putch( *data++ ) == Status::SUCCESS )
             ;
-        return written;
+        return written - 1;
     }
 };
 

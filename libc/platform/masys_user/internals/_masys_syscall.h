@@ -2,7 +2,7 @@
 #include <errno.h>
 
 #define HANDLE_ERRNO_SYSCALL( call ) do {\
-        long long retval = call;\
+        long retval = call;\
         if( retval < 0 ){\
             errno = - retval;\
             return -1;\

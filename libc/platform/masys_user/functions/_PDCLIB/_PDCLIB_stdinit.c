@@ -26,6 +26,8 @@ static unsigned char _PDCLIB_serr_ungetbuf[_PDCLIB_UNGETCBUFSIZE];
 
 
 static FILE _PDCLIB_serr = { 
+    .handle     = { .sval = 0 },
+    .lock       = 0,
     .ops        = &_PDCLIB_fileops, 
     .buffer     = _PDCLIB_serr_buffer, 
     .bufsize    = BUFSIZ, 
@@ -38,6 +40,8 @@ static FILE _PDCLIB_serr = {
     .next       = NULL,
 };
 static FILE _PDCLIB_sout = { 
+    .handle     = { .sval = 0 },
+    .lock       = 0,
     .ops        = &_PDCLIB_fileops, 
     .buffer     = _PDCLIB_sout_buffer, 
     .bufsize    = BUFSIZ, 
@@ -50,6 +54,8 @@ static FILE _PDCLIB_sout = {
     .next       = &_PDCLIB_serr 
 };
 static FILE _PDCLIB_sin  = { 
+    .handle     = { .sval = 2 },
+    .lock       = 0,
     .ops        = &_PDCLIB_fileops, 
     .buffer     = _PDCLIB_sin_buffer, 
     .bufsize    = BUFSIZ, 
@@ -59,7 +65,7 @@ static FILE _PDCLIB_sin  = {
     .ungetbuf   = _PDCLIB_sin_ungetbuf, 
     .status     = _IOLBF | _PDCLIB_FREAD | _PDCLIB_STATIC, 
     .filename   = NULL, 
-    .next       = &_PDCLIB_sin 
+    .next       = &_PDCLIB_sout 
 };
 
 FILE *stdin  = &_PDCLIB_sin;

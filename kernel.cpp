@@ -178,14 +178,16 @@ void kernel( unsigned long magic, unsigned long addr )
 
     /* setup a very basic userspace */
     auto u_stack = pal.alloc( 4,  /* user = */ true ) + 4 * PAGE_SIZE;
-    auto u_text_phys = mem::PageAllocator::virt2phys( hello.text_module );
     for( int i = 0; i < hello.text_pages; ++i ) {
-        pal.map( i * PAGE_SIZE + u_text_phys, i * PAGE_SIZE + 0x0C0DE000,
+        auto phys = mem::PageAllocator::virt2phys(
+                hello.text_module + i * PAGE_SIZE );
+        pal.map( phys, i * PAGE_SIZE + 0x0C0DE000,
                  mem::PageEntry::DEFAULT_FLAGS_USER );
     }
-    auto u_data_phys = mem::PageAllocator::virt2phys( hello.data_module );
     for( int i = 0; i < hello.data_pages; ++i ) {
-        pal.map( i * PAGE_SIZE + u_data_phys, i * PAGE_SIZE + 0x0DA7A000,
+        auto phys = mem::PageAllocator::virt2phys(
+                hello.data_module + i * PAGE_SIZE );
+        pal.map( phys, i * PAGE_SIZE + 0x0DA7A000,
                  mem::PageEntry::DEFAULT_FLAGS_USER );
     }
 

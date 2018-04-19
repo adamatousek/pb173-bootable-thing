@@ -11,9 +11,12 @@ kcfiles = $(wildcard functions/*/*.c) $(wildcard opt/nothread/*.c) \
 ucfiles = $(wildcard functions/*/*.c) $(wildcard opt/nothread/*.c) \
 	  $(wildcard platform/$(pdcplatform_u)/functions/*/*.c)
 kofiles = $(kcfiles:.c=.o)
-uofiles = $(ucfiles:.c=.o) platform/masys_user/functions/stdlib/syscall.o
+uofiles = $(ucfiles:.c=.o) \
+   	  platform/masys_user/functions/stdlib/syscall.o \
+   	  platform/masys_user/functions/stdlib/malloc.o
 
 CC = gcc
+CXX = g++
 LD = gcc
 
 kinclflags = $(foreach i, $(kincldirs), -I$i)
@@ -24,8 +27,11 @@ kernel: pdclib_kernel.a
 user: inclflags = $(uinclflags)
 user: pdclib_user.a
 
-CFLAGS = -ffreestanding -nostdlib -static -fno-stack-protector -fPIC -m32 \
-	 -D_PDCLIB_BUILD -std=c11 -no-pie $(inclflags)
+CFLAGS = -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
+	 -D_PDCLIB_BUILD -std=c11 -no-pie $(inclflags) -g
+CXXFLAGS = -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
+	   -D_PDCLIB_BUILD -std=c++11 -no-pie -fno-rtti -fno-exceptions \
+	   $(inclflags) -g
 
 pdclib_kernel.a: $(kofiles)
 	ar rcs $@ $(kofiles)
@@ -37,3 +43,5 @@ pdclib_user.a: $(uofiles)
 	$(CC) -o $@ -c $(CFLAGS) $<
 %.o: %.S
 	$(CC) -o $@ -c $(CFLAGS) $<
+%.o: %.cpp
+	$(CXX) -o $@ -c $(CXXFLAGS) $<
