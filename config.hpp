@@ -20,7 +20,8 @@ const unsigned PAGEDIR_ENTRIES = 1024;
 const unsigned PAGE_SIZE = MASYS_PAGE_SIZE;
 const unsigned HIGHER_HALF = MASYS_HIGHER_HALF;
 
-namespace mem::reserved {
+namespace mem{
+namespace reserved {
 const unsigned USER_HEAP_BEGIN = 0x1000;
 const unsigned USER_HEAP_END = HIGHER_HALF;
 const unsigned FRAME_ALLOC_BITMAP_START = HIGHER_HALF + 0x1000;
@@ -29,6 +30,7 @@ const unsigned STACK_BOTTOM = MASYS_VIRT_STACK;
 const unsigned HEAP_END = STACK_BOTTOM - 0x400000;
 const unsigned PAGE_DIRECTORY = STACK_BOTTOM;
 } /* reserved */
+} /* mem */
 
 
 } /* masys */

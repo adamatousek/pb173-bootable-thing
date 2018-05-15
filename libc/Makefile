@@ -12,7 +12,7 @@ ucfiles = $(wildcard functions/*/*.c) $(wildcard opt/nothread/*.c) \
 	  $(wildcard platform/$(pdcplatform_u)/functions/*/*.c)
 kofiles = $(kcfiles:.c=.o)
 uofiles = $(ucfiles:.c=.o) \
-   	  platform/masys_user/functions/stdlib/syscall.o \
+   	  platform/masys_user/functions/masystd/syscall.o \
    	  platform/masys_user/functions/stdlib/malloc.o
 
 CC = gcc
