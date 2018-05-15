@@ -1,4 +1,4 @@
-.PHONY: kernel user
+.PHONY: kernel user clean
 pdcplatform_k = masys_kernel
 pdcplatform_u = masys_user
 
@@ -17,7 +17,6 @@ uofiles = $(ucfiles:.c=.o) \
 
 CC = gcc
 CXX = g++
-LD = gcc
 
 kinclflags = $(foreach i, $(kincldirs), -I$i)
 uinclflags = $(foreach i, $(uincldirs), -I$i)
@@ -27,11 +26,11 @@ kernel: pdclib_kernel.a
 user: inclflags = $(uinclflags)
 user: pdclib_user.a
 
-CFLAGS = -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
-	 -D_PDCLIB_BUILD -std=c11 -no-pie $(inclflags) -g
-CXXFLAGS = -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
-	   -D_PDCLIB_BUILD -std=c++11 -no-pie -fno-rtti -fno-exceptions \
-	   $(inclflags) -g
+CFLAGS += -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
+	  -D_PDCLIB_BUILD -std=c11 $(inclflags) -g
+CXXFLAGS += -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
+	    -D_PDCLIB_BUILD -std=c++11 -fno-rtti -fno-exceptions \
+	    $(inclflags) -g
 
 pdclib_kernel.a: $(kofiles)
 	ar rcs $@ $(kofiles)
@@ -45,3 +44,6 @@ pdclib_user.a: $(uofiles)
 	$(CC) -o $@ -c $(CFLAGS) $<
 %.o: %.cpp
 	$(CXX) -o $@ -c $(CXXFLAGS) $<
+
+clean:
+	rm -f $(kofiles) $(uofiles)

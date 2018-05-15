@@ -10,7 +10,7 @@ user: pdcplatform = masys_user
 
 CC = g++
 LD = g++
-LDFLAGS += -Wl,-melf_i386
+LDFLAGS += -Wl,-melf_i386 -no-pie
 GRUB ?= $(HOME)/Dev/masys/grub/bin
 MKRESCUE = env PATH=$$PATH:$(GRUB) grub-mkrescue
 
@@ -20,9 +20,9 @@ cincldirs = libc/includes libc/internals libc/opt/nothread\
 	    libcpp compiler-rt
 cinclflags = $(foreach i, $(cincldirs), -I$i)
 
-CFLAGS += -std=c++17 -ffreestanding -nostdlib -static -fno-stack-protector -m32 \
+CFLAGS += -std=c++14 -ffreestanding -nostdlib -static -fno-stack-protector -m32 \
  	  -fno-PIC -fno-rtti -fno-exceptions $(cinclflags) -D_PDCLIB_BUILD \
-	  -g -no-pie $(cust_cflags)
+	  -g $(cust_cflags)
 
 kofiles = boot.o kernel.o debug.o util.o gdt.o interrupt.o interrupt_asm.o \
           syscall/syscall_asm.o syscall/syscall.o syscall/cease.o \
@@ -62,14 +62,18 @@ debug: boot.img
 
 clean:
 	rm -f boot.img a.out *.o dev/*.o mem/*.o syscall/*.o compiler-rt/*.o
+	$(MAKE) -C libc clean
 
 #### USERLAND ####
 
 user: hello.text.bin hello.data.bin
 
-hello.elf: USER/hello.c $(comprt) libc/pdclib_user.a
+hello.elf: USER/hello.o $(comprt) libc/pdclib_user.a
 	#$(LD) -o $@ $(CFLAGS) $(LDFLAGS) $^ -static-libgcc -lgcc
 	$(LD) -o $@ -T USER/linkscript $(CFLAGS) $(LDFLAGS) $^
+
+USER/hello.o: USER/hello.c
+	$(CC) -o $@ -c $(CFLAGS) $<
 
 hello.text.bin: hello.elf
 	objcopy -I elf32-i386 -O binary -j .text -S $< $@
