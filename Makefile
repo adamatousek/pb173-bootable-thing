@@ -8,8 +8,8 @@ kernel: a.out
 
 user: pdcplatform = masys_user
 
-CC = g++
-LD = g++
+CC = clang
+LD = gcc
 LDFLAGS += -Wl,-melf_i386 -no-pie
 GRUB ?= $(HOME)/Dev/masys/grub/bin
 MKRESCUE = env PATH=$$PATH:$(GRUB) grub-mkrescue
@@ -22,7 +22,7 @@ cinclflags = $(foreach i, $(cincldirs), -I$i)
 
 CFLAGS += -std=c++14 -ffreestanding -nostdlib -static -fno-stack-protector -m32 \
  	  -fno-PIC -fno-pic -fno-pie -fno-rtti -fno-exceptions $(cinclflags) -D_PDCLIB_BUILD \
-	  -g $(cust_cflags)
+	  -g -mno-sse $(cust_cflags)
 
 kofiles = boot.o kernel.o debug.o util.o gdt.o interrupt.o interrupt_asm.o \
           syscall/syscall_asm.o syscall/syscall.o syscall/cease.o \
@@ -58,10 +58,11 @@ test: boot.img
 	qemu-system-i386 -serial mon:stdio -cdrom boot.img # monitor: ^A c
 
 debug: boot.img
-	qemu-system-i386 -S -s -serial mon:stdio -cdrom boot.img # monitor: ^A c
+	qemu-system-i386 -S -gdb tcp::36978 -serial mon:stdio -cdrom boot.img # monitor: ^A c
 
 clean:
 	rm -f boot.img a.out *.o dev/*.o mem/*.o syscall/*.o compiler-rt/*.o
+	rm -f hello.elf hello.data.bin hello.text.bin USER/*.o
 	$(MAKE) -C libc clean
 
 #### USERLAND ####
@@ -69,11 +70,10 @@ clean:
 user: hello.text.bin hello.data.bin
 
 hello.elf: USER/hello.o $(comprt) libc/pdclib_user.a
-	#$(LD) -o $@ $(CFLAGS) $(LDFLAGS) $^ -static-libgcc -lgcc
 	$(LD) -o $@ -T USER/linkscript $(CFLAGS) $(LDFLAGS) $^
 
 USER/hello.o: USER/hello.c
-	$(CC) -o $@ -c $(CFLAGS) $<
+	$(CC) -x c++ -o $@ -c $(CFLAGS) $<
 
 hello.text.bin: hello.elf
 	objcopy -I elf32-i386 -O binary -j .text -S $< $@

@@ -27,9 +27,20 @@ __masys_intr_handler:
             intrhead 9   10  intr_no_errorcode
             intrhead 10  14  intr_errorcode
             intrhead 14  15  intr_errorcode
-            intrhead 15  100 intr_no_errorcode
-            intrhead 100 200 intr_no_errorcode
-            intrhead 200 256 intr_no_errorcode
+            intrhead 15  30  intr_no_errorcode
+            intrhead 30  49  intr_no_errorcode
+            intrhead 49  68  intr_no_errorcode
+            intrhead 68  87  intr_no_errorcode
+            intrhead 87  106 intr_no_errorcode
+            intrhead 106 125 intr_no_errorcode
+            intrhead 125 144 intr_no_errorcode
+            intrhead 144 163 intr_no_errorcode
+            intrhead 163 182 intr_no_errorcode
+            intrhead 182 201 intr_no_errorcode
+            intrhead 201 220 intr_no_errorcode
+            intrhead 220 239 intr_no_errorcode
+            intrhead 239 256 intr_no_errorcode
+
 intr_no_errorcode:
             pushl   (%esp)              # old eax
             movl    $0xBADC0DE, 4(%esp) # dummy error code

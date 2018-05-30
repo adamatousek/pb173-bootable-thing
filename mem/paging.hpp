@@ -47,13 +47,10 @@ static_assert( sizeof( PageEntry ) == 4,
 static_assert( alignof( PageEntry ) == 4,
                "PageEntry has wrong alignment" );
 
-using PageTable alignas( PAGE_SIZE ) = PageEntry [ PAGEDIR_ENTRIES ];
+using PageTable = PageEntry [ PAGEDIR_ENTRIES ];
 
 static_assert( sizeof( PageTable ) == PAGE_SIZE,
                "PageTable has wrong size" );
-static_assert( alignof( PageTable ) == PAGE_SIZE,
-               "PageTable has wrong alignment" );
-
 
 extern "C" {
 

@@ -1,4 +1,4 @@
-target remote :1234
+target remote :36978
 symbol-file a.out
 add-symbol-file hello.elf 0x0c0de000
 break _start

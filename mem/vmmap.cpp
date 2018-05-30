@@ -23,17 +23,17 @@ namespace mem {
 
 namespace {
     PageEntry * const pgdir = reinterpret_cast< PageEntry * >(0xFFFF'F000);
-    constexpr PageEntry & pgdir_e( u32 virt )
+    PageEntry & pgdir_e( u32 virt )
     {
-        return *reinterpret_cast< PageEntry * >( 0xFFFF'F000 | ( virt >> 20 ) & ~0x3 );
+        return *reinterpret_cast< PageEntry * >( 0xFFFF'F000 | ( ( virt >> 20 ) & ~0x3 ) );
     }
-    constexpr PageEntry * pgtbl( u32 virt )
+    PageEntry * pgtbl( u32 virt )
     {
-        return reinterpret_cast< PageEntry * >( 0xFFC0'0000 | ( virt >> 10 ) & ~0xFFF );
+        return reinterpret_cast< PageEntry * >( 0xFFC0'0000 | ( ( virt >> 10 ) & ~0xFFF ) );
     }
-    constexpr PageEntry & pgtbl_e( u32 virt )
+    PageEntry & pgtbl_e( u32 virt )
     {
-        return *reinterpret_cast< PageEntry * >( 0xFFC0'0000 | ( virt >> 10 ) & ~0x3 );
+        return *reinterpret_cast< PageEntry * >( 0xFFC0'0000 | ( ( virt >> 10 ) & ~0x3 ) );
     }
 }
 

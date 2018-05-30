@@ -14,7 +14,7 @@ extern masys::mem::PageTable kernel_pgtbl;
 
 }
 
-#define MASYS_VERBOSE_FALLOC 0
+#define MASYS_VERBOSE_FALLOC 1
 
 namespace masys {
 namespace mem {
@@ -247,7 +247,7 @@ u32 FrameSubAllocator::alloc()
         bytei = last / 8;
         biti = last % 8;
         used = bitmap[ bytei ] & ( 0x80 >> biti );
-        if ( ++last == PAGE_SIZE * PAGE_SIZE * 8 )
+        if ( ++last == PAGE_SIZE * 8 )
             last = 0;
     } while ( used );
 

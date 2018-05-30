@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
+#include <masystd.h>
 
 static bool readf( _PDCLIB_fd_t self, void * buf, size_t length, 
                    size_t * numBytesRead )

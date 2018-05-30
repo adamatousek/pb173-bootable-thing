@@ -15,8 +15,8 @@ uofiles = $(ucfiles:.c=.o) \
    	  platform/masys_user/functions/masystd/syscall.o \
    	  platform/masys_user/functions/stdlib/malloc.o
 
-CC = gcc
-CXX = g++
+CC = clang
+CXX = clang++
 
 kinclflags = $(foreach i, $(kincldirs), -I$i)
 uinclflags = $(foreach i, $(uincldirs), -I$i)
@@ -27,10 +27,10 @@ user: inclflags = $(uinclflags)
 user: pdclib_user.a
 
 CFLAGS += -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
-	  -fno-pic -fno-pie -D_PDCLIB_BUILD -std=c11 $(inclflags) -g
+	  -fno-pic -fno-pie -D_PDCLIB_BUILD -std=c11 $(inclflags) -g -mno-sse
 CXXFLAGS += -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
 	    -fno-pic -fno-pie -D_PDCLIB_BUILD -std=c++11 -fno-rtti -fno-exceptions \
-	    $(inclflags) -g
+	    $(inclflags) -g -mno-sse
 
 pdclib_kernel.a: $(kofiles)
 	ar rcs $@ $(kofiles)
