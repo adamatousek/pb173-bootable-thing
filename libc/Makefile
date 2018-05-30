@@ -27,9 +27,9 @@ user: inclflags = $(uinclflags)
 user: pdclib_user.a
 
 CFLAGS += -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
-	  -D_PDCLIB_BUILD -std=c11 $(inclflags) -g
+	  -fno-pic -fno-pie -D_PDCLIB_BUILD -std=c11 $(inclflags) -g
 CXXFLAGS += -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
-	    -D_PDCLIB_BUILD -std=c++11 -fno-rtti -fno-exceptions \
+	    -fno-pic -fno-pie -D_PDCLIB_BUILD -std=c++11 -fno-rtti -fno-exceptions \
 	    $(inclflags) -g
 
 pdclib_kernel.a: $(kofiles)

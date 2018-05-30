@@ -21,7 +21,7 @@ cincldirs = libc/includes libc/internals libc/opt/nothread\
 cinclflags = $(foreach i, $(cincldirs), -I$i)
 
 CFLAGS += -std=c++14 -ffreestanding -nostdlib -static -fno-stack-protector -m32 \
- 	  -fno-PIC -fno-rtti -fno-exceptions $(cinclflags) -D_PDCLIB_BUILD \
+ 	  -fno-PIC -fno-pic -fno-pie -fno-rtti -fno-exceptions $(cinclflags) -D_PDCLIB_BUILD \
 	  -g $(cust_cflags)
 
 kofiles = boot.o kernel.o debug.o util.o gdt.o interrupt.o interrupt_asm.o \

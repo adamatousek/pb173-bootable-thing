@@ -8,7 +8,7 @@ namespace dev {
 
 class Device {
 public:
-    virtual Status reinit() {} ;
+    virtual Status reinit() { return Status::SUCCESS; } ;
 };
 
 } /* dev */
