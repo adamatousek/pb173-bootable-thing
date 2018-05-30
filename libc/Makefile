@@ -2,18 +2,20 @@
 pdcplatform_k = masys_kernel
 pdcplatform_u = masys_user
 
-kincldirs = includes internals opt/nothread \
-	    platform/$(pdcplatform_k)/includes platform/$(pdcplatform_k)/internals
-uincldirs = includes internals opt/nothread \
-	    platform/$(pdcplatform_u)/includes platform/$(pdcplatform_u)/internals
-kcfiles = $(wildcard functions/*/*.c) $(wildcard opt/nothread/*.c) \
-  	  $(wildcard platform/$(pdcplatform_k)/functions/*/*.c)
-ucfiles = $(wildcard functions/*/*.c) $(wildcard opt/nothread/*.c) \
-	  $(wildcard platform/$(pdcplatform_u)/functions/*/*.c)
-kofiles = $(kcfiles:.c=.o)
-uofiles = $(ucfiles:.c=.o) \
-   	  platform/masys_user/functions/masystd/syscall.o \
-   	  platform/masys_user/functions/stdlib/malloc.o
+incldirs = includes internals opt/nothread
+kincldirs = $(incldirs) platform/$(pdcplatform_k)/includes platform/$(pdcplatform_k)/internals
+uincldirs = $(incldirs) platform/$(pdcplatform_u)/includes platform/$(pdcplatform_u)/internals
+cfiles = $(wildcard functions/*/*.c) $(wildcard opt/nothread/*.c)
+kcfiles = $(cfiles) $(wildcard platform/$(pdcplatform_k)/functions/*/*.c)
+ucfiles = $(cfiles) $(wildcard platform/$(pdcplatform_u)/functions/*/*.c)
+
+kofiles_ = $(kcfiles:.c=.o)
+uofiles_ = $(ucfiles:.c=.o) \
+   	   platform/masys_user/functions/masystd/syscall.o \
+   	   platform/masys_user/functions/stdlib/malloc.o
+
+kofiles = $(addprefix kernel_build/, $(kofiles_))
+uofiles = $(addprefix user_build/, $(uofiles_))
 
 CC = clang
 CXX = clang++
@@ -23,14 +25,14 @@ uinclflags = $(foreach i, $(uincldirs), -I$i)
 
 kernel: inclflags = $(kinclflags)
 kernel: pdclib_kernel.a
+
 user: inclflags = $(uinclflags)
 user: pdclib_user.a
 
-CFLAGS += -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
-	  -fno-pic -fno-pie -D_PDCLIB_BUILD -std=c11 $(inclflags) -g -mno-sse
-CXXFLAGS += -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
-	    -fno-pic -fno-pie -D_PDCLIB_BUILD -std=c++11 -fno-rtti -fno-exceptions \
-	    $(inclflags) -g -mno-sse
+cfl = -ffreestanding -nostdlib -static -fno-stack-protector -fno-PIC -m32 \
+      -fno-pic -fno-pie -D_PDCLIB_BUILD $(inclflags) -mno-sse -g
+CFLAGS += $(cfl) -std=c11
+CXXFLAGS += $(cfl) -std=c++11 -fno-rtti -fno-exceptions
 
 pdclib_kernel.a: $(kofiles)
 	ar rcs $@ $(kofiles)
@@ -38,12 +40,23 @@ pdclib_kernel.a: $(kofiles)
 pdclib_user.a: $(uofiles)
 	ar rcs $@ $(uofiles)
 
-%.o: %.c
+kernel_build/%.o: %.c
 	$(CC) -o $@ -c $(CFLAGS) $<
-%.o: %.S
+kernel_build/%.o: %.S
 	$(CC) -o $@ -c $(CFLAGS) $<
-%.o: %.cpp
+kernel_build/%.o: %.cpp
+	$(CXX) -o $@ -c $(CXXFLAGS) $<
+
+user_build/%.o: %.c
+	$(CC) -o $@ -c $(CFLAGS) $<
+user_build/%.o: %.S
+	$(CC) -o $@ -c $(CFLAGS) $<
+user_build/%.o: %.cpp
 	$(CXX) -o $@ -c $(CXXFLAGS) $<
 
 clean:
 	rm -f $(kofiles) $(uofiles)
+
+bdirs = $(dir $(kofiles) $(uofiles))
+$(shell mkdir -p $(bdirs))
+
