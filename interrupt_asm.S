@@ -4,7 +4,8 @@
         .section .text
         .global __masys_cr2
         .global __masys_intr_handler, __masys_interrupt_handlers
-        .global __masys_setup_idt, __masys_cli, __masys_sti
+        .global __masys_setup_idt, __masys_setup_pic
+        .global __masys_cli, __masys_sti
         .global __masys_userjmp
 
 __masys_cr2:
@@ -23,7 +24,7 @@ __masys_intr_handler:
         .endif
         .endm
             intrhead 0   8   intr_no_errorcode
-            intrhead 8   9   intr_no_errorcode
+            intrhead 8   9   intr_errorcode
             intrhead 9   10  intr_no_errorcode
             intrhead 10  14  intr_errorcode
             intrhead 14  15  intr_errorcode
@@ -34,7 +35,7 @@ intr_no_errorcode:
             pushl   (%esp)              # old eax
             movl    $0xBADC0DE, 4(%esp) # dummy error code
 intr_errorcode:
-            movzx   %al, %eax
+            movzbl  %al, %eax
             pushal
             push    40(%esp)            # copy ireturn address to top
             push    40(%esp)            # copy error code to top
