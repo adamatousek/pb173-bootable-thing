@@ -14,7 +14,7 @@ extern masys::mem::PageTable kernel_pgtbl;
 
 }
 
-#define MASYS_VERBOSE_FALLOC 1
+#define MASYS_VERBOSE_FALLOC 0
 
 namespace masys {
 namespace mem {

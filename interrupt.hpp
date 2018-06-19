@@ -43,9 +43,27 @@ public:
     static constexpr u32 N_SYSCALLS = MASYS_N_SYSCALLS;
     static constexpr u8 SYSCALL_INTERRUPT = MASYS_SYSCALL_INTERRUPT;
 
+    static constexpr u32 N_IRQS = 16;
+    static constexpr bool PIC_MASTER = 0;
+    static constexpr bool PIC_SLAVE = 1;
+
 private:
+    static InterruptManager *self;
     IdtEntry idt[ 265 ];
+    unsigned char irq_base[2];
+
     void register_syscall( unsigned char, void *, unsigned char );
+    void pic_remap( bool pic, unsigned char base );
+    static void pic_reenable( unsigned char irq ); // reenable interrupts
+    char intr2irq( unsigned char intr );
+
+    using IrqHandler = void ( * )( unsigned char );
+    IrqHandler irq_handlers[ N_IRQS ];
+    static void irq_switch_handler( unsigned, unsigned, unsigned );
+    static void irq_dummy_handler( unsigned char );
+
+    static void dummy_handler( unsigned, unsigned, unsigned );
+    static void deadly_handler( unsigned, unsigned, unsigned );
 
 public:
     InterruptManager();
@@ -64,11 +82,17 @@ public:
         register_syscall( num, reinterpret_cast< void * >( fn ), argc );
     }
 
+    void register_irq_handler( unsigned char num, IrqHandler handler ) {
+        if ( num < N_IRQS )
+            irq_handlers[ num ] = handler;
+    }
+
     void cli();
     void sti();
 
-    static void dummy_handler( unsigned, unsigned, unsigned );
-    static void deadly_handler( unsigned, unsigned, unsigned );
+    static void pic_disable( unsigned char irq ); // mask one IRQ
+    static void pic_enable( unsigned char irq ); // unmask one IRQ
+
 };
 
 extern InterruptManager * intr;

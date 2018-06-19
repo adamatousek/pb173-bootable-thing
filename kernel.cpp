@@ -144,6 +144,12 @@ void kernel( unsigned long magic, unsigned long addr )
     InterruptManager intman;
     intr = &intman;
 
+    intman.register_irq_handler( 1, []( unsigned char ){
+            puts( "A key was pressed (IRQ 1). Enjoy the following IRQ 0." );
+            InterruptManager::pic_enable( 0 );
+            InterruptManager::pic_disable( 1 );
+            } );
+
     puts( "Interrupt manager set up." );
     setup_syscalls();
     puts( "Syscalls set up." );
